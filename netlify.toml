@@ -1,0 +1,9 @@
+# Configuración de Netlify para el dashboard de comisiones LUTEC
+[build]
+  publish = "."
+
+# Redirige cualquier ruta al index (por si acaso)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
