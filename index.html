@@ -29,8 +29,10 @@
   .header h1 { font-size: 28px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
   .header .sub { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
-  .period { background: var(--navy); color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .period .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
+  .month-picker { background: var(--navy); color: #fff; padding: 6px 10px 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .month-picker label { color: rgba(255,255,255,0.6); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .month-picker select { background: transparent; color: var(--lime); border: none; font-size: 13px; font-weight: 700; cursor: pointer; padding: 2px 4px; outline: none; }
+  .month-picker select option { background: var(--navy); color: #fff; }
   .updated { font-size: 11px; color: var(--ink-soft); }
   .crumb { padding: 0 28px 16px; font-size: 13px; color: var(--ink-soft); display: none; }
   .crumb a { color: var(--lime-dim); cursor: pointer; text-decoration: none; font-weight: 600; }
@@ -143,7 +145,12 @@
     </div>
     <div class="header-right">
       <div class="updated" id="updatedAt"></div>
-      <div class="period"><span class="dot"></span> <span id="periodLabel">Abril 2026</span></div>
+      <div class="month-picker">
+        <label for="monthSelect">Periodo:</label>
+        <select id="monthSelect" onchange="onMonthChange(this.value)">
+          <option value="__all__">Todos los meses</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -208,25 +215,26 @@
 // CONFIGURACIÓN
 // =====================================================================
 const API_URL = "https://licitaciones3.app.n8n.cloud/webhook/comisiones";
-const PERIOD_LABEL = "Abril 2026"; // etiqueta del periodo mostrada arriba
 
 // Escalones por defecto (regla estándar del equipo)
-// Cada escalón: { hasta: umbral de utilidad en %, tasa: comisión en % }
-// El último escalón siempre aplica a valores >= al último "hasta" anterior
 const TIERS_DEFAULT = [
   { hasta: 10, tasa: 0 },      // 0-10% utilidad → 0% comisión
   { hasta: 20, tasa: 0.25 },   // 10-20% → 0.25%
   { hasta: 30, tasa: 0.50 },   // 20-30% → 0.50%
-  { hasta: null, tasa: 0.75 }  // >= 30% → 0.75% (null = sin tope)
+  { hasta: null, tasa: 0.75 }  // >= 30% → 0.75%
 ];
+
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // =====================================================================
 // ESTADO
 // =====================================================================
-let RAW = [];                // datos crudos del webhook
-let DATA = [];               // datos recalculados con escalones personalizados
+let RAW = [];                // datos crudos del webhook (con todas las líneas de todos los meses)
+let DATA = [];               // datos filtrados por mes + recalculados con escalones
 let currentBuyerIdx = null;  // índice del comprador en vista detalle
 let charts = {};             // instancias de Chart.js
+let currentMonth = '__all__'; // "__all__" o "YYYY-MM"
+let availableMonths = [];    // meses detectados en los datos, ordenados desc
 
 // =====================================================================
 // UTILS
@@ -296,23 +304,99 @@ function tasaSegunEscalones(pctUtil, tiers) {
   return tiers[tiers.length-1].tasa;
 }
 
-// Recalcula TODAS las líneas y totales usando escalones personalizados por comprador
+// Extrae "YYYY-MM" de una fecha "YYYY-MM-DD..."; devuelve '' si no hay fecha
+function monthKey(fecha) {
+  if (!fecha) return '';
+  return String(fecha).substring(0, 7);
+}
+
+// Etiqueta legible: "2026-04" -> "Abril 2026"
+function monthLabel(key) {
+  if (key === '__all__') return 'Todos los meses';
+  if (!key || key.length < 7) return 'Sin fecha';
+  const [y, m] = key.split('-');
+  const idx = parseInt(m, 10) - 1;
+  return (MONTH_NAMES[idx] || m) + ' ' + y;
+}
+
+// Descubre meses disponibles en RAW y llena el <select>
+function detectAvailableMonths() {
+  const set = new Set();
+  let hasNoDate = false;
+  RAW.forEach(b => b.lineas.forEach(l => {
+    const k = monthKey(l.fecha);
+    if (k) set.add(k); else hasNoDate = true;
+  }));
+  availableMonths = Array.from(set).sort().reverse(); // más reciente primero
+
+  const sel = document.getElementById('monthSelect');
+  const previousValue = sel.value;
+  sel.innerHTML = '<option value="__all__">Todos los meses</option>' +
+    availableMonths.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('') +
+    (hasNoDate ? '<option value="__nodate__">Sin fecha</option>' : '');
+
+  // preservar selección si sigue existiendo; sino, ir al mes más reciente
+  if (previousValue && (previousValue === '__all__' || previousValue === '__nodate__' || availableMonths.includes(previousValue))) {
+    sel.value = previousValue;
+    currentMonth = previousValue;
+  } else if (availableMonths.length) {
+    sel.value = availableMonths[0];
+    currentMonth = availableMonths[0];
+  } else {
+    sel.value = '__all__';
+    currentMonth = '__all__';
+  }
+}
+
+// Filtra las líneas de cada comprador según el mes activo
+function filtrarPorMes(lineas) {
+  if (currentMonth === '__all__') return lineas;
+  if (currentMonth === '__nodate__') return lineas.filter(l => !monthKey(l.fecha));
+  return lineas.filter(l => monthKey(l.fecha) === currentMonth);
+}
+
+// Recalcula DATA: filtra por mes, aplica escalones personalizados, y recalcula totales
 function recalcularData() {
   DATA = RAW.map(buyer => {
     const tiers = getTiersFor(buyer.nombre) || TIERS_DEFAULT;
-    const lineas = buyer.lineas.map(l => {
+    const lineasFiltradas = filtrarPorMes(buyer.lineas);
+    const lineas = lineasFiltradas.map(l => {
       const tasa = tasaSegunEscalones(l.pctUtil, tiers);
-      const valorComision = Math.round((l.totalCompra || l.compra * l.cant) * tasa / 100);
+      const totalCompra = l.totalCompra || (l.compra * l.cant);
+      const valorComision = Math.round(totalCompra * tasa / 100);
       return { ...l, pctComis: tasa, valorComision };
     });
-    const comision = lineas.reduce((s, l) => s + l.valorComision, 0);
+    // recalcular totales sobre las líneas filtradas (no confiar en los del webhook, que suman TODO)
+    const comprado = lineas.reduce((s,l) => s + (l.totalCompra || l.compra*l.cant), 0);
+    const negociado = lineas.reduce((s,l) => s + (l.totalBolsa || l.bolsa*l.cant), 0);
+    const utilidad = lineas.reduce((s,l) => s + (l.utilTotal || 0), 0);
+    const comision = lineas.reduce((s,l) => s + l.valorComision, 0);
     return {
-      ...buyer,
+      nombre: buyer.nombre,
       lineas,
-      comision,
-      pctMargen: buyer.negociado > 0 ? (buyer.utilidad / buyer.negociado) * 100 : 0
+      comprado, negociado, utilidad, comision,
+      pctMargen: negociado > 0 ? (utilidad / negociado) * 100 : 0
     };
-  });
+  }).filter(b => b.lineas.length > 0); // ocultar compradores sin líneas en el mes
+}
+
+// Callback del <select>
+function onMonthChange(value) {
+  currentMonth = value;
+  recalcularData();
+  if (currentBuyerIdx !== null) {
+    // busca el mismo comprador en la nueva DATA (puede haber cambiado el índice)
+    const buyerName = (RAW[currentBuyerIdx] && RAW[currentBuyerIdx].nombre) || null;
+    const newIdx = DATA.findIndex(d => d.nombre === buyerName);
+    if (newIdx >= 0) {
+      currentBuyerIdx = newIdx;
+      showDetail(newIdx);
+    } else {
+      showDashboard(); // el comprador no tiene datos en este mes
+    }
+  } else {
+    renderDashboard();
+  }
 }
 
 // =====================================================================
@@ -331,11 +415,13 @@ async function cargar(isReload=false) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     RAW = json.compradores || [];
+    detectAvailableMonths();
     recalcularData();
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('content').style.display = 'block';
-    document.getElementById('viewSub').textContent = 'Datos en vivo desde Monday · ' + DATA.length + ' compradores';
+    const totLineas = RAW.reduce((s,b) => s + b.lineas.length, 0);
+    document.getElementById('viewSub').textContent = 'Datos en vivo desde Monday · ' + RAW.length + ' compradores · ' + totLineas + ' materiales en total';
 
     const now = new Date();
     document.getElementById('updatedAt').textContent = 'Actualizado ' + now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
@@ -358,17 +444,27 @@ async function cargar(isReload=false) {
 // DASHBOARD (vista general)
 // =====================================================================
 function renderDashboard() {
-  document.getElementById('periodLabel').textContent = PERIOD_LABEL;
-
   const totComp = DATA.reduce((s,d)=>s+d.comprado, 0);
   const totNeg = DATA.reduce((s,d)=>s+d.negociado, 0);
   const totUtil = DATA.reduce((s,d)=>s+d.utilidad, 0);
   const totComis = DATA.reduce((s,d)=>s+d.comision, 0);
+  const totLineas = DATA.reduce((s,d)=>s+d.lineas.length, 0);
+
+  const label = monthLabel(currentMonth);
+  document.getElementById('viewTitle').textContent = 'Comisiones · ' + label;
+  document.getElementById('viewTitle').style.textTransform = 'none';
+
+  if (DATA.length === 0) {
+    document.getElementById('statStrip').innerHTML = `<div class="stat" style="grid-column:1/-1;text-align:center;padding:24px;"><div class="lbl">Sin datos</div><div class="val" style="font-size:15px;">No hay materiales registrados en ${label}</div></div>`;
+    document.getElementById('buyers').innerHTML = '';
+    destroyCharts();
+    return;
+  }
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat"><div class="lbl">Total comprado</div><div class="val">${fmt(totComp)}</div></div>
     <div class="stat"><div class="lbl">Total presupuesto</div><div class="val">${fmt(totNeg)}</div></div>
-    <div class="stat"><div class="lbl">Utilidad generada</div><div class="val">${fmt(totUtil)}</div></div>
+    <div class="stat"><div class="lbl">Utilidad generada · ${totLineas} materiales</div><div class="val">${fmt(totUtil)}</div></div>
     <div class="stat accent"><div class="lbl">Comisiones a pagar</div><div class="val">${fmt(totComis)}</div></div>`;
 
   renderCharts();
@@ -489,8 +585,8 @@ function showDetail(i) {
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('detail').classList.add('active');
   document.getElementById('crumb').style.display = 'block';
-  document.getElementById('viewTitle').textContent = d.nombre;
-  document.getElementById('viewTitle').style.textTransform = 'capitalize';
+  document.getElementById('viewTitle').textContent = d.nombre + ' · ' + monthLabel(currentMonth);
+  document.getElementById('viewTitle').style.textTransform = 'none';
   document.getElementById('viewSub').textContent = `${d.lineas.length} materiales gestionados · margen ${pct(d.pctMargen)}`;
 
   renderTiers(d.nombre);
@@ -505,13 +601,22 @@ function showDetail(i) {
   window.scrollTo(0, 0);
 }
 
+function fmtFecha(f) {
+  if (!f) return '—';
+  const [y,m,d] = f.split('-');
+  return `${d}/${m}/${y.substring(2)}`;
+}
+
 function renderDetailTable(d) {
+  // ordenar por fecha ascendente
+  const lineasOrdenadas = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
   document.getElementById('detailTable').innerHTML = `
     <thead><tr>
-      <th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th>
+      <th>Fecha</th><th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th>
       <th>Bolsa</th><th>Compra</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
     </tr></thead>
-    <tbody>${d.lineas.map(l=>`<tr>
+    <tbody>${lineasOrdenadas.map(l=>`<tr>
+      <td>${fmtFecha(l.fecha)}</td>
       <td class="desc">${l.desc}</td>
       <td class="terc hide-sm">${l.tercero||'—'}</td>
       <td>${l.cant}</td>
@@ -522,7 +627,7 @@ function renderDetailTable(d) {
       <td>${commissionBadge(l.pctComis)}</td>
       <td class="comis-val">${l.valorComision>0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="8">Total comisión · ${d.nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
+    <tfoot><tr><td colspan="9">Total comisión · ${d.nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
 }
 
 function commissionBadge(pctComis) {
@@ -603,8 +708,6 @@ function showDashboard() {
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('detail').classList.remove('active');
   document.getElementById('crumb').style.display = 'none';
-  document.getElementById('viewTitle').textContent = 'Comisiones del equipo';
-  document.getElementById('viewTitle').style.textTransform = 'none';
   renderDashboard();
   window.scrollTo(0, 0);
 }
@@ -613,12 +716,12 @@ function showDashboard() {
 // EXPORTAR A EXCEL (formato tipo original)
 // =====================================================================
 function exportExcel() {
-  if (!DATA.length) { toast('No hay datos que exportar', 'error'); return; }
+  if (!DATA.length) { toast('No hay datos que exportar en este mes', 'error'); return; }
   const wb = XLSX.utils.book_new();
   buildConsolidadoSheet(wb);
   DATA.forEach(d => buildBuyerSheet(wb, d));
-  const fname = `Comisiones_${PERIOD_LABEL.replace(/\s+/g,'_')}.xlsx`;
-  XLSX.writeFile(wb, fname);
+  const periodTag = monthLabel(currentMonth).replace(/\s+/g,'_');
+  XLSX.writeFile(wb, `Comisiones_${periodTag}.xlsx`);
   toast('Excel descargado', 'success');
 }
 
@@ -627,29 +730,29 @@ function exportBuyerExcel() {
   const d = DATA[currentBuyerIdx];
   const wb = XLSX.utils.book_new();
   buildBuyerSheet(wb, d);
-  const fname = `Comisiones_${d.nombre.replace(/\s+/g,'_')}_${PERIOD_LABEL.replace(/\s+/g,'_')}.xlsx`;
-  XLSX.writeFile(wb, fname);
+  const periodTag = monthLabel(currentMonth).replace(/\s+/g,'_');
+  XLSX.writeFile(wb, `Comisiones_${d.nombre.replace(/\s+/g,'_')}_${periodTag}.xlsx`);
   toast('Excel descargado', 'success');
 }
 
 function buildConsolidadoSheet(wb) {
+  const periodo = monthLabel(currentMonth);
   const rows = [
     ['TABLA COMISIONES / EQUIPO COMPRAS'],
-    ['MES:', PERIOD_LABEL],
+    ['PERIODO:', periodo],
     [],
-    ['NOMBRE', 'COMPRADO', 'NEGOCIADO (PRESUPUESTO)', 'UTILIDAD', '% MARGEN', 'COMISIÓN']
+    ['NOMBRE', 'COMPRADO', 'NEGOCIADO (PRESUPUESTO)', 'UTILIDAD', '% MARGEN', 'COMISIÓN', 'MATERIALES']
   ];
-  let totC=0, totN=0, totU=0, totCom=0;
+  let totC=0, totN=0, totU=0, totCom=0, totLin=0;
   DATA.forEach(d => {
-    rows.push([d.nombre, d.comprado, d.negociado, d.utilidad, +(d.pctMargen.toFixed(2)), d.comision]);
-    totC += d.comprado; totN += d.negociado; totU += d.utilidad; totCom += d.comision;
+    rows.push([d.nombre, d.comprado, d.negociado, d.utilidad, +(d.pctMargen.toFixed(2)), d.comision, d.lineas.length]);
+    totC += d.comprado; totN += d.negociado; totU += d.utilidad; totCom += d.comision; totLin += d.lineas.length;
   });
   rows.push([]);
-  rows.push(['TOTAL', totC, totN, totU, totN>0 ? +((totU/totN*100).toFixed(2)) : 0, totCom]);
+  rows.push(['TOTAL', totC, totN, totU, totN>0 ? +((totU/totN*100).toFixed(2)) : 0, totCom, totLin]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:22},{wch:18},{wch:22},{wch:18},{wch:12},{wch:16}];
-  // formatos numéricos
+  ws['!cols'] = [{wch:22},{wch:18},{wch:22},{wch:18},{wch:12},{wch:16},{wch:12}];
   const formatMoneyCols = [1,2,3,5];
   const pctCol = 4;
   for (let r = 4; r < rows.length; r++) {
@@ -664,20 +767,30 @@ function buildConsolidadoSheet(wb) {
 }
 
 function buildBuyerSheet(wb, d) {
+  const periodo = monthLabel(currentMonth);
   const rows = [
     ['TABLA COMISIONES / EQUIPO COMPRAS'],
-    ['NOMBRE:', d.nombre, '', '', '', '', '', 'MES:', PERIOD_LABEL],
+    ['NOMBRE:', d.nombre, '', '', '', '', '', '', 'PERIODO:', periodo],
     ['TOTAL COMPRA:', d.comprado],
     ['TOTAL NEGOCIACIÓN:', d.negociado],
     ['TOTAL UTILIDAD:', d.utilidad],
     ['TOTAL COMISIÓN:', d.comision],
     ['% MARGEN PROMEDIO:', +(d.pctMargen.toFixed(2))],
     [],
-    ['Tercero','Descripción','Cant','Unidad','Costo negociación','Total negociación','Costo compra','Total compra','Utilidad unitaria','Utilidad total','% Utilidad','% Comisión','Valor comisión']
+    ['Fecha','Tercero','Descripción','Cant','Unidad','Costo negociación','Total negociación','Costo compra','Total compra','Utilidad unitaria','Utilidad total','% Utilidad','% Comisión','Valor comisión']
   ];
-  d.lineas.forEach(l => {
+  // ordenar por fecha
+  const ordenadas = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  ordenadas.forEach(l => {
     const utilUnit = (l.bolsa||0) - (l.compra||0);
+    // Excel maneja mejor las fechas como Date reales
+    let fechaVal = l.fecha || '';
+    if (fechaVal) {
+      const [y,m,dd] = fechaVal.split('-').map(n=>parseInt(n,10));
+      fechaVal = new Date(Date.UTC(y, m-1, dd));
+    }
     rows.push([
+      fechaVal,
       l.tercero || '',
       l.desc,
       l.cant,
@@ -693,22 +806,23 @@ function buildBuyerSheet(wb, d) {
       l.valorComision
     ]);
   });
-  // fila total
   rows.push([]);
-  rows.push(['','TOTAL','','','','','','','','','', '', d.comision]);
+  rows.push(['','','TOTAL','','','','','','','','','','', d.comision]);
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates: true });
   ws['!cols'] = [
-    {wch:28},{wch:40},{wch:8},{wch:10},{wch:14},{wch:16},{wch:14},{wch:16},
+    {wch:11},{wch:28},{wch:40},{wch:8},{wch:10},{wch:14},{wch:16},{wch:14},{wch:16},
     {wch:14},{wch:14},{wch:10},{wch:11},{wch:14}
   ];
-  // formatos
-  const headerRow = 8; // 0-index de la fila de encabezados (la 9na)
+  const headerRow = 8; // fila 9 (0-index 8)
   const dataStart = headerRow + 1;
-  const dataEnd = dataStart + d.lineas.length;
-  const moneyCols = [4,5,6,7,8,9,12];
-  const pctCols = [10,11];
+  const dataEnd = dataStart + ordenadas.length;
+  const dateCol = 0;
+  const moneyCols = [5,6,7,8,9,10,13];
+  const pctCols = [11,12];
   for (let r = dataStart; r < dataEnd; r++) {
+    const dateCell = ws[XLSX.utils.encode_cell({r, c: dateCol})];
+    if (dateCell && dateCell.v instanceof Date) dateCell.z = 'dd/mm/yyyy';
     moneyCols.forEach(c => {
       const cell = ws[XLSX.utils.encode_cell({r, c})];
       if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
@@ -718,7 +832,6 @@ function buildBuyerSheet(wb, d) {
       if (cell && typeof cell.v === 'number') cell.z = '0.00"%"';
     });
   }
-  // formato de los totales del encabezado
   for (let r = 2; r <= 5; r++) {
     const cell = ws[XLSX.utils.encode_cell({r, c: 1})];
     if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
@@ -726,7 +839,6 @@ function buildBuyerSheet(wb, d) {
   const marginCell = ws[XLSX.utils.encode_cell({r: 6, c: 1})];
   if (marginCell && typeof marginCell.v === 'number') marginCell.z = '0.00"%"';
 
-  // nombre de hoja (máx 31 chars, sin caracteres inválidos)
   const sheetName = d.nombre.replace(/[\\\/\?\*\[\]:]/g, '').substring(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 }
