@@ -4,169 +4,287 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comisiones · LUTEC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --navy: #16283f; --navy-deep: #0f1d2e; --lime: #b8d726; --lime-dim: #97b31c;
-    --paper: #f5f6f4; --card: #ffffff; --ink: #1a2433; --ink-soft: #5a6675;
-    --line: #e3e7ec; --green: #2a9d5c; --amber: #d99a2b; --red: #c94a4a;
-  }
-  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
-  .topbar { background: var(--navy); padding: 0 28px; display: flex; align-items: center; gap: 20px; height: 56px; border-bottom: 3px solid var(--lime); }
-  .brand { color: #fff; font-weight: 700; letter-spacing: 3px; font-size: 18px; }
-  .brand span { color: var(--lime); }
-  .tab-label { color: rgba(255,255,255,0.6); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin-left: auto; }
-  .header { padding: 32px 28px 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
-  .header h1 { font-size: 30px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
-  .header .sub { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
-  .period { background: var(--navy); color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .period .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
-  .crumb { padding: 0 28px 16px; font-size: 13px; color: var(--ink-soft); display: none; }
-  .crumb a { color: var(--lime-dim); cursor: pointer; text-decoration: none; font-weight: 600; }
-  .crumb a:hover { text-decoration: underline; }
-  .stats { padding: 0 28px 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
-  .stat .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
-  .stat .val { font-size: 24px; font-weight: 700; color: var(--navy); margin-top: 4px; }
-  .stat.accent { background: var(--navy); }
-  .stat.accent .lbl { color: rgba(255,255,255,0.6); }
-  .stat.accent .val { color: var(--lime); }
-  .sec-title { padding: 0 28px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-soft); font-weight: 700; }
-  .buyers { padding: 0 28px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-  .buyer { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; position: relative; overflow: hidden; }
-  .buyer:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,40,63,0.12); border-color: var(--navy); }
-  .buyer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--lime); }
-  .buyer-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--navy); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; }
-  .buyer-name { font-size: 16px; font-weight: 700; color: var(--navy); text-transform: capitalize; }
-  .buyer-role { font-size: 12px; color: var(--ink-soft); }
-  .buyer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .mini { background: var(--paper); border-radius: 8px; padding: 10px 12px; }
-  .mini .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); }
-  .mini .v { font-size: 17px; font-weight: 700; color: var(--navy); margin-top: 2px; }
-  .mini.comis { background: var(--navy); }
-  .mini.comis .l { color: rgba(255,255,255,0.55); }
-  .mini.comis .v { color: var(--lime); }
-  .buyer-foot { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--ink-soft); }
-  .go { color: var(--lime-dim); font-weight: 700; }
-  .detail { display: none; padding: 0 28px 40px; }
-  .detail.active { display: block; }
-  .dashboard.hidden { display: none; }
-  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
-  thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; }
-  thead th:first-child, thead th:nth-child(2) { text-align: left; }
-  tbody td { padding: 11px 10px; text-align: right; font-size: 13px; border-bottom: 1px solid var(--line); }
-  tbody td:first-child, tbody td:nth-child(2) { text-align: left; }
-  tbody tr:hover { background: var(--paper); }
-  tbody tr:last-child td { border-bottom: none; }
-  .desc { font-weight: 600; color: var(--ink); }
-  .terc { color: var(--ink-soft); font-size: 12px; }
-  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
-  .b-none { background: #f0e6e6; color: var(--red); }
-  .b-low { background: #fbf1dd; color: var(--amber); }
-  .b-mid { background: #e0f0e8; color: var(--green); }
-  .b-high { background: var(--lime); color: var(--navy); }
-  .comis-val { font-weight: 700; color: var(--navy); }
-  tfoot td { background: var(--lime); color: var(--navy); font-weight: 700; padding: 14px 10px; text-align: right; font-size: 14px; }
-  tfoot td:first-child { text-align: left; }
-  .comis-table-wrap { margin-bottom: 24px; }
-  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; gap: 28px; flex-wrap: wrap; }
-  .rules h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); width: 100%; margin-bottom: 4px; }
-  .rule { font-size: 13px; }
-  .rule b { color: var(--navy); }
-  .back-btn { background: none; border: 1px solid var(--line); color: var(--navy); padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
-  .back-btn:hover { background: var(--navy); color: #fff; }
-  .state { padding: 60px 28px; text-align: center; color: var(--ink-soft); }
-  .state .spin { width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--lime); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .refresh-btn { background: var(--lime); color: var(--navy); border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  @media (max-width: 720px) { .stats { grid-template-columns: 1fr 1fr; } .header h1 { font-size: 24px; } table { font-size: 11px; } .hide-sm { display: none; } }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#16283f;--navy-light:#1e3a5f;--lime:#b8d726;--lime-dim:#97b31c;--paper:#f5f6f4;--card:#fff;--ink:#1a2433;--ink-soft:#5a6675;--line:#e3e7ec;--green:#2a9d5c;--amber:#d99a2b;--red:#c94a4a}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
+.topbar{background:var(--navy);padding:0 24px;display:flex;align-items:center;gap:16px;height:52px;border-bottom:3px solid var(--lime)}
+.brand{color:#fff;font-weight:700;letter-spacing:3px;font-size:17px}.brand span{color:var(--lime)}
+.tab-label{color:rgba(255,255,255,.6);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-left:auto}
+.container{max-width:1200px;margin:0 auto;padding:20px 24px}
+.header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.header h1{font-size:26px;font-weight:700;color:var(--navy)}
+.header .sub{color:var(--ink-soft);font-size:13px;margin-top:2px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+select{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn{background:var(--navy);color:#fff;border:none}.btn:hover{background:var(--navy-light)}
+.btn-lime{background:var(--lime);color:var(--navy);border:none}.btn-lime:hover{background:var(--lime-dim)}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--line)}
+.tab{padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-soft);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab.active{color:var(--navy);border-bottom-color:var(--lime)}
+.tab:hover{color:var(--navy)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.stat .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft)}
+.stat .val{font-size:22px;font-weight:700;color:var(--navy);margin-top:3px}
+.stat.accent{background:var(--navy)}.stat.accent .lbl{color:rgba(255,255,255,.6)}.stat.accent .val{color:var(--lime)}
+.chart-wrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:24px}
+.chart-title{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);font-weight:700;margin-bottom:16px}
+.chart{display:flex;align-items:flex-end;gap:8px;height:200px;padding:0 8px}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-pair{display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center;height:180px}
+.bar{width:18px;border-radius:3px 3px 0 0;transition:.3s;position:relative;min-height:2px}
+.bar:hover{opacity:.8}
+.bar-label{font-size:9px;color:var(--ink-soft);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend{display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:11px;color:var(--ink-soft)}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+.buyers{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:24px}
+.buyer{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+.buyer:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(22,40,63,.1);border-color:var(--navy)}
+.buyer::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--lime)}
+.buyer-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--navy);color:var(--lime);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;text-transform:uppercase}
+.buyer-name{font-size:15px;font-weight:700;color:var(--navy);text-transform:capitalize}
+.buyer-role{font-size:11px;color:var(--ink-soft)}
+.buyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{background:var(--paper);border-radius:7px;padding:8px 10px}
+.mini .l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+.mini .v{font-size:15px;font-weight:700;color:var(--navy);margin-top:2px}
+.mini.comis{background:var(--navy)}.mini.comis .l{color:rgba(255,255,255,.5)}.mini.comis .v{color:var(--lime)}
+.buyer-foot{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-soft)}
+.go{color:var(--lime-dim);font-weight:700}
+.detail{display:none}.detail.active{display:block}
+.dashboard.hidden{display:none}
+.crumb{margin-bottom:16px;font-size:13px;color:var(--ink-soft)}.crumb a{color:var(--lime-dim);cursor:pointer;text-decoration:none;font-weight:600}.crumb a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+thead th{background:var(--navy);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;text-align:right;font-weight:600}
+thead th:first-child,thead th:nth-child(2){text-align:left}
+tbody td{padding:9px 8px;text-align:right;font-size:12px;border-bottom:1px solid var(--line)}
+tbody td:first-child,tbody td:nth-child(2){text-align:left}
+tbody tr:hover{background:var(--paper)}
+.desc{font-weight:600;color:var(--ink)}.terc{color:var(--ink-soft);font-size:11px}
+.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.b-none{background:#f0e6e6;color:var(--red)}.b-low{background:#fbf1dd;color:var(--amber)}
+.b-mid{background:#e0f0e8;color:var(--green)}.b-high{background:var(--lime);color:var(--navy)}
+.comis-val{font-weight:700;color:var(--navy)}
+tfoot td{background:var(--lime);color:var(--navy);font-weight:700;padding:12px 8px;text-align:right;font-size:13px}
+tfoot td:first-child{text-align:left}
+.rules{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap}
+.rules h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);width:100%;margin-bottom:4px}
+.rule{font-size:12px}.rule b{color:var(--navy)}
+.rate-edit{display:flex;gap:8px;align-items:center;margin-bottom:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+.rate-edit label{font-size:12px;color:var(--ink-soft);font-weight:600}
+.rate-edit input{width:60px;padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;text-align:center}
+.rate-edit .apply{padding:4px 12px;background:var(--lime);color:var(--navy);border:none;border-radius:4px;font-weight:700;font-size:12px;cursor:pointer}
+.state{padding:50px 24px;text-align:center;color:var(--ink-soft)}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--lime);border-radius:50%;margin:0 auto 12px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.consol-table{margin-bottom:24px}
+.consol-table table{font-size:13px}
+.consol-table thead th{font-size:11px}
+.consol-table tbody td{font-size:13px}
+.pct-margin{font-weight:700}
+.pct-margin.pos{color:var(--green)}.pct-margin.neg{color:var(--red)}
+@media(max-width:720px){.stats{grid-template-columns:1fr 1fr}.header h1{font-size:22px}table{font-size:11px}.hide-sm{display:none}.chart{height:150px}.bar-pair{height:130px}}
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">LU<span>TEC</span></div>
-    <div class="tab-label">Comisiones de compras</div>
-  </div>
+<div class="topbar">
+  <div class="brand">LU<span>TEC</span></div>
+  <div class="tab-label">Comisiones de compras</div>
+</div>
+<div class="container">
   <div class="header">
     <div>
       <h1 id="viewTitle">Comisiones del equipo</h1>
       <div class="sub" id="viewSub">Cargando datos desde Monday…</div>
     </div>
-    <div class="period"><span class="dot"></span> Abril 2026</div>
-  </div>
-  <div class="crumb" id="crumb"><a onclick="showDashboard()">← Todos los compradores</a></div>
-  <div class="dashboard" id="dashboard">
-    <div id="loadingState" class="state"><div class="spin"></div>Consultando comisiones en vivo…</div>
-    <div id="errorState" class="state" style="display:none;">
-      No se pudieron cargar los datos.<br><br>
-      <button class="refresh-btn" onclick="cargar()">Reintentar</button>
+    <div class="controls">
+      <select id="mesFilter"><option value="todos">Todos los meses</option></select>
+      <button class="btn-lime" onclick="exportarExcel()">📥 Exportar Excel</button>
     </div>
-    <div id="content" style="display:none;">
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="consolidado" onclick="switchTab('consolidado')">Consolidado</div>
+    <div class="tab" data-tab="compradores" onclick="switchTab('compradores')">Por comprador</div>
+  </div>
+  <div id="loadingState" class="state"><div class="spin"></div>Consultando comisiones en vivo…</div>
+  <div id="errorState" class="state" style="display:none;">No se pudieron cargar los datos.<br><br><button class="btn" onclick="cargar()">Reintentar</button></div>
+  <div id="content" style="display:none;">
+    <div id="consolidadoView">
       <div class="stats" id="statStrip"></div>
-      <div class="sec-title">Compradores</div>
+      <div class="chart-wrap">
+        <div class="chart-title">Comparativo por comprador</div>
+        <div class="chart" id="chart"></div>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:#579bfc"></span>Comprado</span>
+          <span><span class="legend-dot" style="background:#fdab3d"></span>Negociado</span>
+          <span><span class="legend-dot" style="background:#00c875"></span>Utilidad</span>
+          <span><span class="legend-dot" style="background:var(--lime)"></span>Comisión</span>
+        </div>
+      </div>
+      <div class="consol-table" id="consolTable"></div>
+    </div>
+    <div id="compradoresView" style="display:none;">
+      <div class="stats" id="statStrip2"></div>
       <div class="buyers" id="buyers"></div>
     </div>
-  </div>
-  <div class="detail" id="detail">
-    <button class="back-btn" onclick="showDashboard()">← Volver al equipo</button>
-    <div class="rules">
-      <h3>Tabla de comisión por utilidad</h3>
-      <div class="rule"><b>&lt; 10%</b> → 0%</div>
-      <div class="rule"><b>10–20%</b> → 0.25%</div>
-      <div class="rule"><b>20–30%</b> → 0.50%</div>
-      <div class="rule"><b>≥ 30%</b> → 0.75%</div>
+    <div class="detail" id="detail">
+      <div class="crumb"><a onclick="showBuyers()">← Todos los compradores</a></div>
+      <div class="rate-edit" id="rateEdit">
+        <label>Tasa de comisión personalizada:</label>
+        <input type="number" id="rateInput" step="0.05" min="0" max="5" placeholder="auto">
+        <span style="font-size:12px;color:var(--ink-soft)">%</span>
+        <button class="apply" onclick="aplicarTasa()">Aplicar</button>
+        <button class="apply" style="background:var(--line);color:var(--ink)" onclick="resetTasa()">Auto (escalonada)</button>
+      </div>
+      <div class="rules">
+        <h3>Tabla de comisión escalonada (por defecto)</h3>
+        <div class="rule"><b>&lt; 10%</b> → 0%</div>
+        <div class="rule"><b>10–20%</b> → 0.25%</div>
+        <div class="rule"><b>20–30%</b> → 0.50%</div>
+        <div class="rule"><b>≥ 30%</b> → 0.75%</div>
+      </div>
+      <div class="stats" id="detailStats"></div>
+      <div id="detailTableWrap"></div>
     </div>
-    <div class="stats" id="detailStats"></div>
-    <div class="comis-table-wrap"><table id="detailTable"></table></div>
   </div>
+</div>
 
 <script>
-// ⬇️ AQUÍ va la URL de tu webhook de n8n
 const API_URL = "https://licitaciones3.app.n8n.cloud/webhook/comisiones";
-
 let DATA = [];
+let FILTERED = [];
+let currentTab = 'consolidado';
+let currentBuyerIdx = -1;
+let tasasPersonalizadas = {};
 
 const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
 const pct = n => n.toFixed(1) + '%';
-function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
-function commissionBadge(pctComis){
-  if(pctComis===0) return '<span class="badge b-none">0%</span>';
-  if(pctComis===0.25) return '<span class="badge b-low">0.25%</span>';
-  if(pctComis===0.5) return '<span class="badge b-mid">0.50%</span>';
-  return '<span class="badge b-high">0.75%</span>';
+function initials(name) { return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+
+const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function mesLabel(fecha) {
+  if (!fecha) return 'Sin fecha';
+  const d = new Date(fecha);
+  return meses[d.getMonth()] + ' ' + d.getFullYear();
 }
 
-async function cargar(){
-  document.getElementById('loadingState').style.display='block';
-  document.getElementById('errorState').style.display='none';
-  document.getElementById('content').style.display='none';
-  try{
-    const res = await fetch(API_URL);
-    const json = await res.json();
-    DATA = json.compradores || [];
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('content').style.display='block';
-    document.getElementById('viewSub').textContent = 'Datos en vivo desde Monday · ' + DATA.length + ' compradores';
-    renderDashboard();
-  }catch(e){
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('errorState').style.display='block';
-    document.getElementById('viewSub').textContent = 'Error de conexión';
+function commissionBadge(pctComis) {
+  if (pctComis === 0) return '<span class="badge b-none">0%</span>';
+  if (pctComis <= 0.25) return '<span class="badge b-low">' + pctComis + '%</span>';
+  if (pctComis <= 0.5) return '<span class="badge b-mid">' + pctComis + '%</span>';
+  return '<span class="badge b-high">' + pctComis + '%</span>';
+}
+
+function recalcularComision(linea, tasaFija) {
+  const bolsa = linea.bolsa;
+  const compra = linea.compra;
+  if (bolsa <= 0) return { ...linea, pctComis: 0, valorComision: 0 };
+  const utilidad = (bolsa - compra) / bolsa;
+  let tasa;
+  if (tasaFija !== undefined) {
+    tasa = utilidad < 0 ? 0 : tasaFija / 100;
+  } else {
+    if (utilidad < 0.10) tasa = 0;
+    else if (utilidad < 0.20) tasa = 0.0025;
+    else if (utilidad < 0.30) tasa = 0.005;
+    else tasa = 0.0075;
   }
+  return { ...linea, pctComis: tasa * 100, valorComision: Math.round(linea.totalCompra * tasa) };
 }
 
-function renderDashboard(){
-  const totComp = DATA.reduce((s,d)=>s+d.comprado,0);
-  const totNeg = DATA.reduce((s,d)=>s+d.negociado,0);
-  const totUtil = DATA.reduce((s,d)=>s+d.utilidad,0);
-  const totComis = DATA.reduce((s,d)=>s+d.comision,0);
-  document.getElementById('statStrip').innerHTML = `
-    <div class="stat"><div class="lbl">Total comprado</div><div class="val">${fmt(totComp)}</div></div>
-    <div class="stat"><div class="lbl">Total presupuesto</div><div class="val">${fmt(totNeg)}</div></div>
-    <div class="stat"><div class="lbl">Utilidad generada</div><div class="val">${fmt(totUtil)}</div></div>
-    <div class="stat accent"><div class="lbl">Comisiones a pagar</div><div class="val">${fmt(totComis)}</div></div>`;
-  document.getElementById('buyers').innerHTML = DATA.map((d,i)=>`
+function filtrarPorMes(data, mes) {
+  if (mes === 'todos') return data;
+  return data.map(d => {
+    const lineasFiltradas = d.lineas.filter(l => mesLabel(l.fecha) === mes);
+    const comprado = lineasFiltradas.reduce((s, l) => s + l.totalCompra, 0);
+    const negociado = lineasFiltradas.reduce((s, l) => s + l.totalBolsa, 0);
+    const utilidad = negociado - comprado;
+    const comision = lineasFiltradas.reduce((s, l) => s + l.valorComision, 0);
+    return { ...d, lineas: lineasFiltradas, comprado, negociado, utilidad, comision,
+      pctMargen: negociado > 0 ? Math.round((utilidad / negociado) * 1000) / 10 : 0 };
+  }).filter(d => d.lineas.length > 0);
+}
+
+function poblarMeses(data) {
+  const sel = document.getElementById('mesFilter');
+  const mesesSet = new Set();
+  data.forEach(d => d.lineas.forEach(l => { if (l.fecha) mesesSet.add(mesLabel(l.fecha)); }));
+  const sorted = [...mesesSet].sort((a, b) => {
+    const [ma, ya] = [meses.indexOf(a.substring(0, 3)), parseInt(a.substring(4))];
+    const [mb, yb] = [meses.indexOf(b.substring(0, 3)), parseInt(b.substring(4))];
+    return (ya - yb) || (ma - mb);
+  });
+  sel.innerHTML = '<option value="todos">Todos los meses</option>';
+  sorted.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o); });
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('consolidadoView').style.display = tab === 'consolidado' ? 'block' : 'none';
+  document.getElementById('compradoresView').style.display = tab === 'compradores' ? 'block' : 'none';
+  document.getElementById('detail').classList.remove('active');
+  renderAll();
+}
+
+function renderStats(containerId, data) {
+  const tc = data.reduce((s, d) => s + d.comprado, 0);
+  const tn = data.reduce((s, d) => s + d.negociado, 0);
+  const tu = data.reduce((s, d) => s + d.utilidad, 0);
+  const tcom = data.reduce((s, d) => s + d.comision, 0);
+  document.getElementById(containerId).innerHTML = `
+    <div class="stat"><div class="lbl">Total comprado</div><div class="val">${fmt(tc)}</div></div>
+    <div class="stat"><div class="lbl">Total presupuesto</div><div class="val">${fmt(tn)}</div></div>
+    <div class="stat"><div class="lbl">Utilidad generada</div><div class="val">${fmt(tu)}</div></div>
+    <div class="stat accent"><div class="lbl">Comisiones a pagar</div><div class="val">${fmt(tcom)}</div></div>`;
+}
+
+function renderChart(data) {
+  const maxVal = Math.max(...data.map(d => Math.max(d.comprado, d.negociado, 1)));
+  const ch = document.getElementById('chart');
+  ch.innerHTML = data.map(d => {
+    const h1 = Math.max(2, (d.comprado / maxVal) * 170);
+    const h2 = Math.max(2, (d.negociado / maxVal) * 170);
+    const h3 = Math.max(2, (Math.abs(d.utilidad) / maxVal) * 170);
+    const h4 = Math.max(2, (d.comision / maxVal) * 170);
+    const nombre = d.nombre.split(' ')[0];
+    return `<div class="bar-group">
+      <div class="bar-pair">
+        <div class="bar" style="height:${h1}px;background:#579bfc" title="Comprado: ${fmt(d.comprado)}"></div>
+        <div class="bar" style="height:${h2}px;background:#fdab3d" title="Negociado: ${fmt(d.negociado)}"></div>
+        <div class="bar" style="height:${h3}px;background:#00c875" title="Utilidad: ${fmt(d.utilidad)}"></div>
+        <div class="bar" style="height:${h4}px;background:var(--lime)" title="Comisión: ${fmt(d.comision)}"></div>
+      </div>
+      <div class="bar-label" title="${d.nombre}">${nombre}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderConsolTable(data) {
+  document.getElementById('consolTable').innerHTML = `<table>
+    <thead><tr><th style="text-align:left">Comprador</th><th>Comprado</th><th>Negociado</th><th>Utilidad</th><th>Margen</th><th>Comisión</th></tr></thead>
+    <tbody>${data.map(d => {
+      const mc = d.pctMargen >= 0 ? 'pos' : 'neg';
+      return `<tr><td style="text-align:left;font-weight:600;text-transform:capitalize">${d.nombre}</td>
+        <td>${fmt(d.comprado)}</td><td>${fmt(d.negociado)}</td><td>${fmt(d.utilidad)}</td>
+        <td><span class="pct-margin ${mc}">${pct(d.pctMargen)}</span></td>
+        <td class="comis-val">${fmt(d.comision)}</td></tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr><td style="text-align:left">TOTAL</td>
+      <td>${fmt(data.reduce((s,d)=>s+d.comprado,0))}</td>
+      <td>${fmt(data.reduce((s,d)=>s+d.negociado,0))}</td>
+      <td>${fmt(data.reduce((s,d)=>s+d.utilidad,0))}</td>
+      <td></td>
+      <td>${fmt(data.reduce((s,d)=>s+d.comision,0))}</td>
+    </tr></tfoot></table>`;
+}
+
+function renderBuyers(data) {
+  document.getElementById('buyers').innerHTML = data.map((d, i) => `
     <div class="buyer" onclick="showDetail(${i})">
       <div class="buyer-head">
         <div class="avatar">${initials(d.nombre)}</div>
@@ -175,45 +293,133 @@ function renderDashboard(){
       <div class="buyer-grid">
         <div class="mini"><div class="l">Comprado</div><div class="v">${fmt(d.comprado)}</div></div>
         <div class="mini"><div class="l">Utilidad</div><div class="v">${fmt(d.utilidad)}</div></div>
-        <div class="mini comis" style="grid-column: span 2;"><div class="l">Comisión del mes</div><div class="v">${fmt(d.comision)}</div></div>
+        <div class="mini comis" style="grid-column:span 2"><div class="l">Comisión</div><div class="v">${fmt(d.comision)}</div></div>
       </div>
-      <div class="buyer-foot"><span>Ver detalle línea por línea</span><span class="go">Abrir →</span></div>
+      <div class="buyer-foot"><span>Ver detalle</span><span class="go">Abrir →</span></div>
     </div>`).join('');
 }
 
-function showDetail(i){
-  const d = DATA[i];
-  document.getElementById('dashboard').classList.add('hidden');
+function showDetail(i) {
+  currentBuyerIdx = i;
+  const d = FILTERED[i];
+  document.getElementById('compradoresView').style.display = 'none';
+  document.getElementById('consolidadoView').style.display = 'none';
   document.getElementById('detail').classList.add('active');
-  document.getElementById('crumb').style.display='block';
   document.getElementById('viewTitle').textContent = d.nombre;
   document.getElementById('viewTitle').style.textTransform = 'capitalize';
-  document.getElementById('viewSub').textContent = `${d.lineas.length} materiales gestionados`;
+  document.getElementById('viewSub').textContent = `${d.lineas.length} materiales`;
+  const tasa = tasasPersonalizadas[d.nombre];
+  document.getElementById('rateInput').value = tasa !== undefined ? tasa : '';
+  document.getElementById('rateInput').placeholder = tasa !== undefined ? tasa : 'auto';
+  renderDetailContent(d);
+}
+
+function renderDetailContent(d) {
+  const tasa = tasasPersonalizadas[d.nombre];
+  const lineas = d.lineas.map(l => recalcularComision(l, tasa));
+  const comTotal = lineas.reduce((s, l) => s + l.valorComision, 0);
   document.getElementById('detailStats').innerHTML = `
     <div class="stat"><div class="lbl">Comprado</div><div class="val">${fmt(d.comprado)}</div></div>
     <div class="stat"><div class="lbl">Presupuesto</div><div class="val">${fmt(d.negociado)}</div></div>
     <div class="stat"><div class="lbl">Utilidad</div><div class="val">${fmt(d.utilidad)}</div></div>
-    <div class="stat accent"><div class="lbl">Comisión</div><div class="val">${fmt(d.comision)}</div></div>`;
-  document.getElementById('detailTable').innerHTML = `
+    <div class="stat accent"><div class="lbl">Comisión${tasa !== undefined ? ' (' + tasa + '%)' : ''}</div><div class="val">${fmt(comTotal)}</div></div>`;
+  document.getElementById('detailTableWrap').innerHTML = `<table>
     <thead><tr><th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th><th>Bolsa</th><th>Compra</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th></tr></thead>
-    <tbody>${d.lineas.map(l=>`<tr>
-      <td class="desc">${l.desc}</td><td class="terc hide-sm">${l.tercero||'—'}</td><td>${l.cant}</td>
+    <tbody>${lineas.map(l => `<tr>
+      <td class="desc">${l.desc}</td><td class="terc hide-sm">${l.tercero || '—'}</td><td>${l.cant}</td>
       <td>${fmt(l.bolsa)}</td><td>${fmt(l.compra)}</td><td>${fmt(l.utilTotal)}</td><td>${pct(l.pctUtil)}</td>
-      <td>${commissionBadge(l.pctComis)}</td><td class="comis-val">${l.valorComision>0?fmt(l.valorComision):'—'}</td>
+      <td>${commissionBadge(l.pctComis)}</td><td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="8">Total comisión · ${d.nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
-  window.scrollTo(0,0);
+    <tfoot><tr><td colspan="8">Total comisión · ${d.nombre}</td><td>${fmt(comTotal)}</td></tr></tfoot></table>`;
 }
 
-function showDashboard(){
-  document.getElementById('dashboard').classList.remove('hidden');
+function aplicarTasa() {
+  const val = parseFloat(document.getElementById('rateInput').value);
+  if (isNaN(val) || val < 0) return;
+  const d = FILTERED[currentBuyerIdx];
+  tasasPersonalizadas[d.nombre] = val;
+  renderDetailContent(d);
+}
+
+function resetTasa() {
+  const d = FILTERED[currentBuyerIdx];
+  delete tasasPersonalizadas[d.nombre];
+  document.getElementById('rateInput').value = '';
+  document.getElementById('rateInput').placeholder = 'auto';
+  renderDetailContent(d);
+}
+
+function showBuyers() {
   document.getElementById('detail').classList.remove('active');
-  document.getElementById('crumb').style.display='none';
-  document.getElementById('viewTitle').textContent='Comisiones del equipo';
-  document.getElementById('viewTitle').style.textTransform='none';
-  window.scrollTo(0,0);
+  if (currentTab === 'consolidado') { document.getElementById('consolidadoView').style.display = 'block'; }
+  else { document.getElementById('compradoresView').style.display = 'block'; }
+  document.getElementById('viewTitle').textContent = 'Comisiones del equipo';
+  document.getElementById('viewTitle').style.textTransform = 'none';
+  renderAll();
 }
 
+function renderAll() {
+  const mes = document.getElementById('mesFilter').value;
+  FILTERED = filtrarPorMes(DATA, mes);
+  // Recalcular con tasas personalizadas
+  FILTERED = FILTERED.map(d => {
+    const tasa = tasasPersonalizadas[d.nombre];
+    if (tasa === undefined) return d;
+    const lineas = d.lineas.map(l => recalcularComision(l, tasa));
+    const comision = lineas.reduce((s, l) => s + l.valorComision, 0);
+    return { ...d, lineas, comision };
+  });
+  const n = FILTERED.length;
+  const mesText = mes === 'todos' ? 'todos los meses' : mes;
+  document.getElementById('viewSub').textContent = `Datos en vivo · ${n} comprador${n !== 1 ? 'es' : ''} · ${mesText}`;
+  renderStats('statStrip', FILTERED);
+  renderStats('statStrip2', FILTERED);
+  renderChart(FILTERED);
+  renderConsolTable(FILTERED);
+  renderBuyers(FILTERED);
+}
+
+function exportarExcel() {
+  const wb = XLSX.utils.book_new();
+  // Hoja consolidado
+  const consolData = [['CONSOLIDADO DE COMISIONES LUTEC', '', '', '', '', ''], [''], ['Comprador', 'Comprado', 'Negociado', 'Utilidad', 'Margen %', 'Comisión']];
+  FILTERED.forEach(d => consolData.push([d.nombre, d.comprado, d.negociado, d.utilidad, d.pctMargen / 100, d.comision]));
+  consolData.push(['TOTAL', FILTERED.reduce((s,d)=>s+d.comprado,0), FILTERED.reduce((s,d)=>s+d.negociado,0), FILTERED.reduce((s,d)=>s+d.utilidad,0), '', FILTERED.reduce((s,d)=>s+d.comision,0)]);
+  const wsC = XLSX.utils.aoa_to_sheet(consolData);
+  XLSX.utils.book_append_sheet(wb, wsC, 'CONSOLIDADO');
+  // Hoja por comprador
+  FILTERED.forEach(d => {
+    const tasa = tasasPersonalizadas[d.nombre];
+    const rows = [['COMISIONES - ' + d.nombre.toUpperCase()], [''], ['Material', 'Proveedor', 'Cant', 'Und', 'Bolsa', 'Total Bolsa', 'Compra', 'Total Compra', 'Utilidad', '% Util', '% Comis', 'Valor Comisión']];
+    const lineas = d.lineas.map(l => recalcularComision(l, tasa));
+    lineas.forEach(l => rows.push([l.desc, l.tercero, l.cant, l.und, l.bolsa, l.totalBolsa, l.compra, l.totalCompra, l.utilTotal, l.pctUtil / 100, l.pctComis / 100, l.valorComision]));
+    rows.push(['TOTAL', '', '', '', '', '', '', '', '', '', '', lineas.reduce((s,l)=>s+l.valorComision,0)]);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const nombre = d.nombre.split(' ')[0].toUpperCase().substring(0, 20);
+    XLSX.utils.book_append_sheet(wb, ws, nombre);
+  });
+  XLSX.writeFile(wb, 'COMISIONES_LUTEC.xlsx');
+}
+
+document.getElementById('mesFilter').addEventListener('change', () => { renderAll(); });
+
+async function cargar() {
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('errorState').style.display = 'none';
+  document.getElementById('content').style.display = 'none';
+  try {
+    const res = await fetch(API_URL);
+    const json = await res.json();
+    DATA = json.compradores || [];
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    poblarMeses(DATA);
+    renderAll();
+  } catch (e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+  }
+}
 cargar();
 </script>
 </body>
