@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comisiones · LUTEC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -16,26 +18,41 @@
   .brand { color: #fff; font-weight: 700; letter-spacing: 3px; font-size: 18px; }
   .brand span { color: var(--lime); }
   .tab-label { color: rgba(255,255,255,0.6); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin-left: auto; }
-  .header { padding: 32px 28px 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
-  .header h1 { font-size: 30px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
-  .header .sub { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
+  .topbar-actions { display: flex; gap: 8px; }
+  .top-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; }
+  .top-btn:hover { background: rgba(255,255,255,0.15); }
+  .top-btn.primary { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+  .top-btn.primary:hover { background: var(--lime-dim); }
+  .top-btn .ic { font-size: 14px; }
+  .top-btn.spinning .ic { animation: spin 0.8s linear infinite; display: inline-block; }
+  .header { padding: 28px 28px 16px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  .header h1 { font-size: 28px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
+  .header .sub { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
   .period { background: var(--navy); color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .period .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
+  .updated { font-size: 11px; color: var(--ink-soft); }
   .crumb { padding: 0 28px 16px; font-size: 13px; color: var(--ink-soft); display: none; }
   .crumb a { color: var(--lime-dim); cursor: pointer; text-decoration: none; font-weight: 600; }
   .crumb a:hover { text-decoration: underline; }
-  .stats { padding: 0 28px 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .stats { padding: 0 28px 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
   .stat .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
-  .stat .val { font-size: 24px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+  .stat .val { font-size: 22px; font-weight: 700; color: var(--navy); margin-top: 4px; }
   .stat.accent { background: var(--navy); }
   .stat.accent .lbl { color: rgba(255,255,255,0.6); }
   .stat.accent .val { color: var(--lime); }
-  .sec-title { padding: 0 28px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-soft); font-weight: 700; }
+  .sec-title { padding: 8px 28px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-soft); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .charts-grid { padding: 0 28px 24px; display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .chart-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .chart-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--navy); margin-bottom: 12px; font-weight: 700; }
+  .chart-wrap { position: relative; height: 260px; }
+  .chart-wrap.tall { height: 300px; }
   .buyers { padding: 0 28px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .buyer { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; position: relative; overflow: hidden; }
   .buyer:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,40,63,0.12); border-color: var(--navy); }
   .buyer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--lime); }
+  .buyer.custom::before { background: var(--amber); }
   .buyer-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
   .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--navy); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; }
   .buyer-name { font-size: 16px; font-weight: 700; color: var(--navy); text-transform: capitalize; }
@@ -43,15 +60,21 @@
   .buyer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mini { background: var(--paper); border-radius: 8px; padding: 10px 12px; }
   .mini .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); }
-  .mini .v { font-size: 17px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+  .mini .v { font-size: 16px; font-weight: 700; color: var(--navy); margin-top: 2px; }
   .mini.comis { background: var(--navy); }
   .mini.comis .l { color: rgba(255,255,255,0.55); }
   .mini.comis .v { color: var(--lime); }
   .buyer-foot { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--ink-soft); }
   .go { color: var(--lime-dim); font-weight: 700; }
+  .custom-tag { font-size: 10px; background: #fbf1dd; color: var(--amber); padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .detail { display: none; padding: 0 28px 40px; }
   .detail.active { display: block; }
   .dashboard.hidden { display: none; }
+  .detail-actions { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn { background: var(--card); border: 1px solid var(--line); color: var(--navy); padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+  .btn:hover { background: var(--navy); color: #fff; }
+  .btn.accent { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+  .btn.accent:hover { background: var(--lime-dim); border-color: var(--lime-dim); color: var(--navy); }
   table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
   thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; }
   thead th:first-child, thead th:nth-child(2) { text-align: left; }
@@ -61,7 +84,7 @@
   tbody tr:last-child td { border-bottom: none; }
   .desc { font-weight: 600; color: var(--ink); }
   .terc { color: var(--ink-soft); font-size: 12px; }
-  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; white-space: nowrap; }
   .b-none { background: #f0e6e6; color: var(--red); }
   .b-low { background: #fbf1dd; color: var(--amber); }
   .b-mid { background: #e0f0e8; color: var(--green); }
@@ -69,151 +92,648 @@
   .comis-val { font-weight: 700; color: var(--navy); }
   tfoot td { background: var(--lime); color: var(--navy); font-weight: 700; padding: 14px 10px; text-align: right; font-size: 14px; }
   tfoot td:first-child { text-align: left; }
-  .comis-table-wrap { margin-bottom: 24px; }
-  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; gap: 28px; flex-wrap: wrap; }
-  .rules h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); width: 100%; margin-bottom: 4px; }
-  .rule { font-size: 13px; }
-  .rule b { color: var(--navy); }
-  .back-btn { background: none; border: 1px solid var(--line); color: var(--navy); padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
-  .back-btn:hover { background: var(--navy); color: #fff; }
+  .comis-table-wrap { margin-bottom: 24px; overflow-x: auto; }
+  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+  .rules-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+  .rules-head h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
+  .rules-head .rules-tag { font-size: 11px; color: var(--ink-soft); }
+  .rules-tag.custom { color: var(--amber); font-weight: 700; }
+  .tiers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+  .tier-box { background: var(--paper); border-radius: 8px; padding: 10px 12px; }
+  .tier-box label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .tier-box input { width: 100%; border: 1px solid var(--line); padding: 6px 8px; border-radius: 4px; font-size: 13px; font-weight: 600; color: var(--navy); background: #fff; }
+  .tier-box input:focus { outline: none; border-color: var(--lime); }
+  .tier-box .arrow { text-align: center; color: var(--ink-soft); font-size: 14px; margin: 4px 0; }
+  .tier-actions { display: flex; gap: 8px; margin-top: 12px; }
   .state { padding: 60px 28px; text-align: center; color: var(--ink-soft); }
   .state .spin { width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--lime); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .refresh-btn { background: var(--lime); color: var(--navy); border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  @media (max-width: 720px) { .stats { grid-template-columns: 1fr 1fr; } .header h1 { font-size: 24px; } table { font-size: 11px; } .hide-sm { display: none; } }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+  @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .header h1 { font-size: 22px; }
+    table { font-size: 11px; }
+    .hide-sm { display: none; }
+    .topbar { padding: 0 14px; }
+    .header { padding: 20px 14px 12px; }
+    .stats, .buyers, .charts-grid, .detail, .crumb, .sec-title { padding-left: 14px; padding-right: 14px; }
+    .top-btn { padding: 6px 10px; font-size: 11px; }
+    .tab-label { display: none; }
+  }
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="brand">LU<span>TEC</span></div>
     <div class="tab-label">Comisiones de compras</div>
+    <div class="topbar-actions">
+      <button class="top-btn" id="reloadBtn" onclick="cargar(true)"><span class="ic">↻</span> Recargar</button>
+      <button class="top-btn primary" onclick="exportExcel()"><span class="ic">↓</span> Excel</button>
+    </div>
   </div>
+
   <div class="header">
     <div>
       <h1 id="viewTitle">Comisiones del equipo</h1>
       <div class="sub" id="viewSub">Cargando datos desde Monday…</div>
     </div>
-    <div class="period"><span class="dot"></span> Abril 2026</div>
+    <div class="header-right">
+      <div class="updated" id="updatedAt"></div>
+      <div class="period"><span class="dot"></span> <span id="periodLabel">Abril 2026</span></div>
+    </div>
   </div>
+
   <div class="crumb" id="crumb"><a onclick="showDashboard()">← Todos los compradores</a></div>
+
   <div class="dashboard" id="dashboard">
     <div id="loadingState" class="state"><div class="spin"></div>Consultando comisiones en vivo…</div>
     <div id="errorState" class="state" style="display:none;">
       No se pudieron cargar los datos.<br><br>
-      <button class="refresh-btn" onclick="cargar()">Reintentar</button>
+      <button class="btn accent" onclick="cargar()">Reintentar</button>
     </div>
     <div id="content" style="display:none;">
       <div class="stats" id="statStrip"></div>
+
+      <div class="sec-title">Resumen visual</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Comprado vs Presupuesto por comprador</h3>
+          <div class="chart-wrap tall"><canvas id="chartBars"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Participación en comisiones</h3>
+          <div class="chart-wrap tall"><canvas id="chartDonut"></canvas></div>
+        </div>
+        <div class="chart-card" style="grid-column: 1 / -1;">
+          <h3>Margen de utilidad promedio por comprador (%)</h3>
+          <div class="chart-wrap"><canvas id="chartMargin"></canvas></div>
+        </div>
+      </div>
+
       <div class="sec-title">Compradores</div>
       <div class="buyers" id="buyers"></div>
     </div>
   </div>
+
   <div class="detail" id="detail">
-    <button class="back-btn" onclick="showDashboard()">← Volver al equipo</button>
-    <div class="rules">
-      <h3>Tabla de comisión por utilidad</h3>
-      <div class="rule"><b>&lt; 10%</b> → 0%</div>
-      <div class="rule"><b>10–20%</b> → 0.25%</div>
-      <div class="rule"><b>20–30%</b> → 0.50%</div>
-      <div class="rule"><b>≥ 30%</b> → 0.75%</div>
+    <div class="detail-actions">
+      <button class="btn" onclick="showDashboard()">← Volver al equipo</button>
+      <button class="btn accent" onclick="exportBuyerExcel()">↓ Descargar Excel de este comprador</button>
     </div>
+
+    <div class="rules">
+      <div class="rules-head">
+        <h3>Tabla de comisión — <span id="tierBuyerName"></span></h3>
+        <span class="rules-tag" id="tierMode">Regla estándar del equipo</span>
+      </div>
+      <div class="tiers-grid" id="tiersGrid"></div>
+      <div class="tier-actions">
+        <button class="btn accent" onclick="saveTiers()">Guardar cambios para este comprador</button>
+        <button class="btn" onclick="resetTiers()">Volver a la regla estándar</button>
+      </div>
+    </div>
+
     <div class="stats" id="detailStats"></div>
     <div class="comis-table-wrap"><table id="detailTable"></table></div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
 <script>
-// ⬇️ AQUÍ va la URL de tu webhook de n8n
+// =====================================================================
+// CONFIGURACIÓN
+// =====================================================================
 const API_URL = "https://licitaciones3.app.n8n.cloud/webhook/comisiones";
+const PERIOD_LABEL = "Abril 2026"; // etiqueta del periodo mostrada arriba
 
-let DATA = [];
+// Escalones por defecto (regla estándar del equipo)
+// Cada escalón: { hasta: umbral de utilidad en %, tasa: comisión en % }
+// El último escalón siempre aplica a valores >= al último "hasta" anterior
+const TIERS_DEFAULT = [
+  { hasta: 10, tasa: 0 },      // 0-10% utilidad → 0% comisión
+  { hasta: 20, tasa: 0.25 },   // 10-20% → 0.25%
+  { hasta: 30, tasa: 0.50 },   // 20-30% → 0.50%
+  { hasta: null, tasa: 0.75 }  // >= 30% → 0.75% (null = sin tope)
+];
 
-const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
-const pct = n => n.toFixed(1) + '%';
-function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
-function commissionBadge(pctComis){
-  if(pctComis===0) return '<span class="badge b-none">0%</span>';
-  if(pctComis===0.25) return '<span class="badge b-low">0.25%</span>';
-  if(pctComis===0.5) return '<span class="badge b-mid">0.50%</span>';
-  return '<span class="badge b-high">0.75%</span>';
+// =====================================================================
+// ESTADO
+// =====================================================================
+let RAW = [];                // datos crudos del webhook
+let DATA = [];               // datos recalculados con escalones personalizados
+let currentBuyerIdx = null;  // índice del comprador en vista detalle
+let charts = {};             // instancias de Chart.js
+
+// =====================================================================
+// UTILS
+// =====================================================================
+const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CO');
+const pct = n => (n||0).toFixed(1) + '%';
+const initials = name => name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast ' + type, 2200);
 }
 
-async function cargar(){
-  document.getElementById('loadingState').style.display='block';
-  document.getElementById('errorState').style.display='none';
-  document.getElementById('content').style.display='none';
-  try{
-    const res = await fetch(API_URL);
+// Paleta de colores para gráficas (rotativa)
+const PALETTE = ['#16283f','#b8d726','#2a9d5c','#d99a2b','#c94a4a','#4a7bc9','#8e5ac9','#e07b3f','#5aa7c9','#7fb32b'];
+
+// =====================================================================
+// LOCALSTORAGE: escalones personalizados por comprador
+// =====================================================================
+const TIERS_KEY = 'lutec_tiers_v1';
+
+function loadTiersMap() {
+  try {
+    const raw = localStorage.getItem(TIERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveTiersMap(map) {
+  localStorage.setItem(TIERS_KEY, JSON.stringify(map));
+}
+
+function getTiersFor(buyerName) {
+  const map = loadTiersMap();
+  return map[buyerName] || null; // null = usa la regla por defecto
+}
+
+function isCustomTiers(buyerName) {
+  return getTiersFor(buyerName) !== null;
+}
+
+function setTiersFor(buyerName, tiers) {
+  const map = loadTiersMap();
+  map[buyerName] = tiers;
+  saveTiersMap(map);
+}
+
+function removeTiersFor(buyerName) {
+  const map = loadTiersMap();
+  delete map[buyerName];
+  saveTiersMap(map);
+}
+
+// =====================================================================
+// CÁLCULO DE COMISIÓN CON ESCALONES
+// =====================================================================
+// Recibe utilidad en % (ej 15.5) y una lista de escalones
+// Devuelve la tasa de comisión en % (ej 0.25)
+function tasaSegunEscalones(pctUtil, tiers) {
+  if (pctUtil <= 0) return 0;
+  for (const t of tiers) {
+    if (t.hasta === null) return t.tasa;      // último escalón
+    if (pctUtil < t.hasta) return t.tasa;
+  }
+  return tiers[tiers.length-1].tasa;
+}
+
+// Recalcula TODAS las líneas y totales usando escalones personalizados por comprador
+function recalcularData() {
+  DATA = RAW.map(buyer => {
+    const tiers = getTiersFor(buyer.nombre) || TIERS_DEFAULT;
+    const lineas = buyer.lineas.map(l => {
+      const tasa = tasaSegunEscalones(l.pctUtil, tiers);
+      const valorComision = Math.round((l.totalCompra || l.compra * l.cant) * tasa / 100);
+      return { ...l, pctComis: tasa, valorComision };
+    });
+    const comision = lineas.reduce((s, l) => s + l.valorComision, 0);
+    return {
+      ...buyer,
+      lineas,
+      comision,
+      pctMargen: buyer.negociado > 0 ? (buyer.utilidad / buyer.negociado) * 100 : 0
+    };
+  });
+}
+
+// =====================================================================
+// FETCH DE DATOS
+// =====================================================================
+async function cargar(isReload=false) {
+  const btn = document.getElementById('reloadBtn');
+  if (isReload) btn.classList.add('spinning');
+
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('errorState').style.display = 'none';
+  document.getElementById('content').style.display = 'none';
+
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
-    DATA = json.compradores || [];
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('content').style.display='block';
+    RAW = json.compradores || [];
+    recalcularData();
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
     document.getElementById('viewSub').textContent = 'Datos en vivo desde Monday · ' + DATA.length + ' compradores';
+
+    const now = new Date();
+    document.getElementById('updatedAt').textContent = 'Actualizado ' + now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+
     renderDashboard();
-  }catch(e){
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('errorState').style.display='block';
+
+    if (isReload) toast('Datos actualizados', 'success');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
     document.getElementById('viewSub').textContent = 'Error de conexión';
+    if (isReload) toast('Error al recargar', 'error');
+  } finally {
+    setTimeout(() => btn.classList.remove('spinning'), 400);
   }
 }
 
-function renderDashboard(){
-  const totComp = DATA.reduce((s,d)=>s+d.comprado,0);
-  const totNeg = DATA.reduce((s,d)=>s+d.negociado,0);
-  const totUtil = DATA.reduce((s,d)=>s+d.utilidad,0);
-  const totComis = DATA.reduce((s,d)=>s+d.comision,0);
+// =====================================================================
+// DASHBOARD (vista general)
+// =====================================================================
+function renderDashboard() {
+  document.getElementById('periodLabel').textContent = PERIOD_LABEL;
+
+  const totComp = DATA.reduce((s,d)=>s+d.comprado, 0);
+  const totNeg = DATA.reduce((s,d)=>s+d.negociado, 0);
+  const totUtil = DATA.reduce((s,d)=>s+d.utilidad, 0);
+  const totComis = DATA.reduce((s,d)=>s+d.comision, 0);
+
   document.getElementById('statStrip').innerHTML = `
     <div class="stat"><div class="lbl">Total comprado</div><div class="val">${fmt(totComp)}</div></div>
     <div class="stat"><div class="lbl">Total presupuesto</div><div class="val">${fmt(totNeg)}</div></div>
     <div class="stat"><div class="lbl">Utilidad generada</div><div class="val">${fmt(totUtil)}</div></div>
     <div class="stat accent"><div class="lbl">Comisiones a pagar</div><div class="val">${fmt(totComis)}</div></div>`;
+
+  renderCharts();
+
   document.getElementById('buyers').innerHTML = DATA.map((d,i)=>`
-    <div class="buyer" onclick="showDetail(${i})">
+    <div class="buyer ${isCustomTiers(d.nombre) ? 'custom' : ''}" onclick="showDetail(${i})">
       <div class="buyer-head">
         <div class="avatar">${initials(d.nombre)}</div>
-        <div><div class="buyer-name">${d.nombre}</div><div class="buyer-role">Comprador · ${d.lineas.length} materiales</div></div>
+        <div style="flex:1;">
+          <div class="buyer-name">${d.nombre}</div>
+          <div class="buyer-role">Comprador · ${d.lineas.length} materiales</div>
+        </div>
+        ${isCustomTiers(d.nombre) ? '<span class="custom-tag">Personalizado</span>' : ''}
       </div>
       <div class="buyer-grid">
         <div class="mini"><div class="l">Comprado</div><div class="v">${fmt(d.comprado)}</div></div>
         <div class="mini"><div class="l">Utilidad</div><div class="v">${fmt(d.utilidad)}</div></div>
-        <div class="mini comis" style="grid-column: span 2;"><div class="l">Comisión del mes</div><div class="v">${fmt(d.comision)}</div></div>
+        <div class="mini comis" style="grid-column: span 2;">
+          <div class="l">Comisión del mes · margen ${pct(d.pctMargen)}</div>
+          <div class="v">${fmt(d.comision)}</div>
+        </div>
       </div>
       <div class="buyer-foot"><span>Ver detalle línea por línea</span><span class="go">Abrir →</span></div>
     </div>`).join('');
 }
 
-function showDetail(i){
+// =====================================================================
+// GRÁFICAS
+// =====================================================================
+function destroyCharts() {
+  Object.values(charts).forEach(c => c && c.destroy());
+  charts = {};
+}
+
+function renderCharts() {
+  destroyCharts();
+  if (!DATA.length) return;
+
+  const labels = DATA.map(d => d.nombre);
+  const short = s => s.length > 12 ? s.split(' ')[0] : s;
+  const shortLabels = labels.map(short);
+
+  // 1. Barras: comprado vs presupuesto
+  charts.bars = new Chart(document.getElementById('chartBars'), {
+    type: 'bar',
+    data: {
+      labels: shortLabels,
+      datasets: [
+        { label: 'Presupuesto (bolsa)', data: DATA.map(d=>d.negociado), backgroundColor: '#16283f', borderRadius: 4 },
+        { label: 'Comprado (real)', data: DATA.map(d=>d.comprado), backgroundColor: '#b8d726', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      scales: {
+        y: { ticks: { callback: v => '$' + (v/1e6).toFixed(0) + 'M', font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // 2. Dona: participación en comisiones
+  const comisiones = DATA.map(d => d.comision);
+  const totalComis = comisiones.reduce((a,b)=>a+b, 0);
+  charts.donut = new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: shortLabels,
+      datasets: [{ data: comisiones, backgroundColor: DATA.map((_,i)=>PALETTE[i % PALETTE.length]), borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: { callbacks: {
+          label: (ctx) => {
+            const val = ctx.parsed;
+            const pctVal = totalComis ? (val/totalComis*100).toFixed(1) : 0;
+            return ` ${ctx.label}: ${fmt(val)} (${pctVal}%)`;
+          }
+        }}
+      }
+    }
+  });
+
+  // 3. Barras horizontales: margen % por comprador
+  const margins = DATA.map(d => ({ nombre: short(d.nombre), pct: d.pctMargen })).sort((a,b) => b.pct - a.pct);
+  charts.margin = new Chart(document.getElementById('chartMargin'), {
+    type: 'bar',
+    data: {
+      labels: margins.map(m=>m.nombre),
+      datasets: [{
+        label: '% Utilidad promedio',
+        data: margins.map(m=>m.pct),
+        backgroundColor: margins.map(m => m.pct >= 20 ? '#2a9d5c' : m.pct >= 10 ? '#b8d726' : m.pct >= 0 ? '#d99a2b' : '#c94a4a'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { callback: v => v + '%', font: { size: 10 } } },
+        y: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// =====================================================================
+// DETALLE POR COMPRADOR
+// =====================================================================
+function showDetail(i) {
+  currentBuyerIdx = i;
   const d = DATA[i];
+
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('detail').classList.add('active');
-  document.getElementById('crumb').style.display='block';
+  document.getElementById('crumb').style.display = 'block';
   document.getElementById('viewTitle').textContent = d.nombre;
   document.getElementById('viewTitle').style.textTransform = 'capitalize';
-  document.getElementById('viewSub').textContent = `${d.lineas.length} materiales gestionados`;
+  document.getElementById('viewSub').textContent = `${d.lineas.length} materiales gestionados · margen ${pct(d.pctMargen)}`;
+
+  renderTiers(d.nombre);
+
   document.getElementById('detailStats').innerHTML = `
     <div class="stat"><div class="lbl">Comprado</div><div class="val">${fmt(d.comprado)}</div></div>
     <div class="stat"><div class="lbl">Presupuesto</div><div class="val">${fmt(d.negociado)}</div></div>
     <div class="stat"><div class="lbl">Utilidad</div><div class="val">${fmt(d.utilidad)}</div></div>
     <div class="stat accent"><div class="lbl">Comisión</div><div class="val">${fmt(d.comision)}</div></div>`;
+
+  renderDetailTable(d);
+  window.scrollTo(0, 0);
+}
+
+function renderDetailTable(d) {
   document.getElementById('detailTable').innerHTML = `
-    <thead><tr><th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th><th>Bolsa</th><th>Compra</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th></tr></thead>
+    <thead><tr>
+      <th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th>
+      <th>Bolsa</th><th>Compra</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
+    </tr></thead>
     <tbody>${d.lineas.map(l=>`<tr>
-      <td class="desc">${l.desc}</td><td class="terc hide-sm">${l.tercero||'—'}</td><td>${l.cant}</td>
-      <td>${fmt(l.bolsa)}</td><td>${fmt(l.compra)}</td><td>${fmt(l.utilTotal)}</td><td>${pct(l.pctUtil)}</td>
-      <td>${commissionBadge(l.pctComis)}</td><td class="comis-val">${l.valorComision>0?fmt(l.valorComision):'—'}</td>
+      <td class="desc">${l.desc}</td>
+      <td class="terc hide-sm">${l.tercero||'—'}</td>
+      <td>${l.cant}</td>
+      <td>${fmt(l.bolsa)}</td>
+      <td>${fmt(l.compra)}</td>
+      <td>${fmt(l.utilTotal)}</td>
+      <td>${pct(l.pctUtil)}</td>
+      <td>${commissionBadge(l.pctComis)}</td>
+      <td class="comis-val">${l.valorComision>0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`).join('')}</tbody>
     <tfoot><tr><td colspan="8">Total comisión · ${d.nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
-  window.scrollTo(0,0);
 }
 
-function showDashboard(){
+function commissionBadge(pctComis) {
+  if (pctComis === 0) return '<span class="badge b-none">0%</span>';
+  if (pctComis <= 0.25) return `<span class="badge b-low">${pctComis}%</span>`;
+  if (pctComis <= 0.5) return `<span class="badge b-mid">${pctComis}%</span>`;
+  return `<span class="badge b-high">${pctComis}%</span>`;
+}
+
+// =====================================================================
+// EDITOR DE ESCALONES POR COMPRADOR
+// =====================================================================
+function renderTiers(buyerName) {
+  const tiers = getTiersFor(buyerName) || TIERS_DEFAULT;
+  const isCustom = isCustomTiers(buyerName);
+
+  document.getElementById('tierBuyerName').textContent = buyerName;
+  const tag = document.getElementById('tierMode');
+  tag.textContent = isCustom ? 'Regla personalizada' : 'Regla estándar del equipo';
+  tag.className = 'rules-tag ' + (isCustom ? 'custom' : '');
+
+  const grid = document.getElementById('tiersGrid');
+  let html = '';
+  let anterior = 0;
+  tiers.forEach((t, i) => {
+    const rango = t.hasta === null ? `≥ ${anterior}%` : `${anterior}% – ${t.hasta}%`;
+    html += `
+      <div class="tier-box">
+        <label>Utilidad ${rango}</label>
+        <input type="number" step="0.01" min="0" data-tier="${i}" data-field="tasa" value="${t.tasa}">
+        <div style="font-size:10px;color:var(--ink-soft);margin-top:4px;">% comisión</div>
+      </div>`;
+    if (t.hasta !== null) {
+      html += `
+        <div class="tier-box">
+          <label>Umbral siguiente</label>
+          <input type="number" step="0.1" min="0" data-tier="${i}" data-field="hasta" value="${t.hasta}">
+          <div style="font-size:10px;color:var(--ink-soft);margin-top:4px;">% utilidad</div>
+        </div>`;
+    }
+    anterior = t.hasta === null ? anterior : t.hasta;
+  });
+  grid.innerHTML = html;
+}
+
+function saveTiers() {
+  if (currentBuyerIdx === null) return;
+  const buyerName = DATA[currentBuyerIdx].nombre;
+  const tiers = JSON.parse(JSON.stringify(TIERS_DEFAULT)); // clona la estructura
+
+  document.querySelectorAll('#tiersGrid input').forEach(inp => {
+    const i = parseInt(inp.dataset.tier, 10);
+    const field = inp.dataset.field;
+    const val = parseFloat(inp.value);
+    if (!isNaN(val)) tiers[i][field] = val;
+  });
+
+  setTiersFor(buyerName, tiers);
+  recalcularData();
+  showDetail(currentBuyerIdx); // rerender con los nuevos valores
+  toast('Escalones actualizados para ' + buyerName, 'success');
+}
+
+function resetTiers() {
+  if (currentBuyerIdx === null) return;
+  const buyerName = DATA[currentBuyerIdx].nombre;
+  removeTiersFor(buyerName);
+  recalcularData();
+  showDetail(currentBuyerIdx);
+  toast('Volvió a la regla estándar', 'success');
+}
+
+// =====================================================================
+// NAVEGACIÓN
+// =====================================================================
+function showDashboard() {
+  currentBuyerIdx = null;
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('detail').classList.remove('active');
-  document.getElementById('crumb').style.display='none';
-  document.getElementById('viewTitle').textContent='Comisiones del equipo';
-  document.getElementById('viewTitle').style.textTransform='none';
-  window.scrollTo(0,0);
+  document.getElementById('crumb').style.display = 'none';
+  document.getElementById('viewTitle').textContent = 'Comisiones del equipo';
+  document.getElementById('viewTitle').style.textTransform = 'none';
+  renderDashboard();
+  window.scrollTo(0, 0);
 }
 
+// =====================================================================
+// EXPORTAR A EXCEL (formato tipo original)
+// =====================================================================
+function exportExcel() {
+  if (!DATA.length) { toast('No hay datos que exportar', 'error'); return; }
+  const wb = XLSX.utils.book_new();
+  buildConsolidadoSheet(wb);
+  DATA.forEach(d => buildBuyerSheet(wb, d));
+  const fname = `Comisiones_${PERIOD_LABEL.replace(/\s+/g,'_')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast('Excel descargado', 'success');
+}
+
+function exportBuyerExcel() {
+  if (currentBuyerIdx === null) return;
+  const d = DATA[currentBuyerIdx];
+  const wb = XLSX.utils.book_new();
+  buildBuyerSheet(wb, d);
+  const fname = `Comisiones_${d.nombre.replace(/\s+/g,'_')}_${PERIOD_LABEL.replace(/\s+/g,'_')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast('Excel descargado', 'success');
+}
+
+function buildConsolidadoSheet(wb) {
+  const rows = [
+    ['TABLA COMISIONES / EQUIPO COMPRAS'],
+    ['MES:', PERIOD_LABEL],
+    [],
+    ['NOMBRE', 'COMPRADO', 'NEGOCIADO (PRESUPUESTO)', 'UTILIDAD', '% MARGEN', 'COMISIÓN']
+  ];
+  let totC=0, totN=0, totU=0, totCom=0;
+  DATA.forEach(d => {
+    rows.push([d.nombre, d.comprado, d.negociado, d.utilidad, +(d.pctMargen.toFixed(2)), d.comision]);
+    totC += d.comprado; totN += d.negociado; totU += d.utilidad; totCom += d.comision;
+  });
+  rows.push([]);
+  rows.push(['TOTAL', totC, totN, totU, totN>0 ? +((totU/totN*100).toFixed(2)) : 0, totCom]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:22},{wch:18},{wch:22},{wch:18},{wch:12},{wch:16}];
+  // formatos numéricos
+  const formatMoneyCols = [1,2,3,5];
+  const pctCol = 4;
+  for (let r = 4; r < rows.length; r++) {
+    formatMoneyCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r, c})];
+      if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
+    });
+    const pctCell = ws[XLSX.utils.encode_cell({r, c: pctCol})];
+    if (pctCell && typeof pctCell.v === 'number') pctCell.z = '0.00"%"';
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'CONSOLIDADO');
+}
+
+function buildBuyerSheet(wb, d) {
+  const rows = [
+    ['TABLA COMISIONES / EQUIPO COMPRAS'],
+    ['NOMBRE:', d.nombre, '', '', '', '', '', 'MES:', PERIOD_LABEL],
+    ['TOTAL COMPRA:', d.comprado],
+    ['TOTAL NEGOCIACIÓN:', d.negociado],
+    ['TOTAL UTILIDAD:', d.utilidad],
+    ['TOTAL COMISIÓN:', d.comision],
+    ['% MARGEN PROMEDIO:', +(d.pctMargen.toFixed(2))],
+    [],
+    ['Tercero','Descripción','Cant','Unidad','Costo negociación','Total negociación','Costo compra','Total compra','Utilidad unitaria','Utilidad total','% Utilidad','% Comisión','Valor comisión']
+  ];
+  d.lineas.forEach(l => {
+    const utilUnit = (l.bolsa||0) - (l.compra||0);
+    rows.push([
+      l.tercero || '',
+      l.desc,
+      l.cant,
+      l.und || 'UND',
+      l.bolsa,
+      l.totalBolsa || (l.bolsa * l.cant),
+      l.compra,
+      l.totalCompra || (l.compra * l.cant),
+      utilUnit,
+      l.utilTotal,
+      +(l.pctUtil||0).toFixed(2),
+      l.pctComis,
+      l.valorComision
+    ]);
+  });
+  // fila total
+  rows.push([]);
+  rows.push(['','TOTAL','','','','','','','','','', '', d.comision]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    {wch:28},{wch:40},{wch:8},{wch:10},{wch:14},{wch:16},{wch:14},{wch:16},
+    {wch:14},{wch:14},{wch:10},{wch:11},{wch:14}
+  ];
+  // formatos
+  const headerRow = 8; // 0-index de la fila de encabezados (la 9na)
+  const dataStart = headerRow + 1;
+  const dataEnd = dataStart + d.lineas.length;
+  const moneyCols = [4,5,6,7,8,9,12];
+  const pctCols = [10,11];
+  for (let r = dataStart; r < dataEnd; r++) {
+    moneyCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r, c})];
+      if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
+    });
+    pctCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r, c})];
+      if (cell && typeof cell.v === 'number') cell.z = '0.00"%"';
+    });
+  }
+  // formato de los totales del encabezado
+  for (let r = 2; r <= 5; r++) {
+    const cell = ws[XLSX.utils.encode_cell({r, c: 1})];
+    if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
+  }
+  const marginCell = ws[XLSX.utils.encode_cell({r: 6, c: 1})];
+  if (marginCell && typeof marginCell.v === 'number') marginCell.z = '0.00"%"';
+
+  // nombre de hoja (máx 31 chars, sin caracteres inválidos)
+  const sheetName = d.nombre.replace(/[\\\/\?\*\[\]:]/g, '').substring(0, 31);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+}
+
+// =====================================================================
+// INICIO
+// =====================================================================
 cargar();
 </script>
 </body>
