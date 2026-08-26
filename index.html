@@ -196,6 +196,9 @@
   .upload-list .file-item:last-child { border-bottom: none; }
   .upload-list .file-name { color: var(--navy); font-weight: 600; }
   .upload-list .file-meta { font-size: 11px; color: var(--ink-soft); }
+  .file-del { background: none; border: 1px solid var(--red); color: var(--red); width: 26px; height: 26px; border-radius: 50%; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+  .file-del:hover { background: var(--red); color: #fff; }
+  .tier-card-config { border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:10px; transition: border-color .2s; }
 
   /* Backup */
   .backup-section { padding: 14px; background: var(--paper); border-radius: 8px; margin-bottom: 14px; }
@@ -1117,6 +1120,14 @@ function renderExtras() {
       </div>
       <div class="accordion-body" id="accBodyDisc"></div>
     </div>` : ''}
+
+    <div class="accordion" id="accMonday">
+      <div class="accordion-head" onclick="toggleAcc('accMonday')">
+        <div class="title"><span>📋 Materiales en Monday por logístico</span><span class="count">${MATERIALES_MONDAY.length}</span></div>
+        <span class="caret">▼</span>
+      </div>
+      <div class="accordion-body" id="accBodyMonday"></div>
+    </div>
   `;
 
   // Pendientes
@@ -1212,6 +1223,55 @@ function renderExtras() {
           <td style="color:${d.valorNuevo > d.valorAnterior ? 'var(--red)' : 'var(--green)'};">${d.valorNuevo > d.valorAnterior ? '+' : ''}${fmt(d.valorNuevo - d.valorAnterior)}</td>
         </tr>`).join('')}</tbody>
       </table></div>`;
+  }
+
+  // Monday materials by logístico
+  const bm = document.getElementById('accBodyMonday');
+  if (MATERIALES_MONDAY.length === 0) {
+    bm.innerHTML = `<div class="empty-msg">No hay materiales cargados de Monday. Haz clic en Recargar.</div>`;
+  } else {
+    const porLog = {};
+    MATERIALES_MONDAY.forEach(m => {
+      const log = m.logistico || 'SIN ASIGNAR';
+      if (!porLog[log]) porLog[log] = { items: [], totalBolsa: 0 };
+      porLog[log].items.push(m);
+      porLog[log].totalBolsa += (m.bolsa || 0) * (m.cantidad || 0);
+    });
+    const logs = Object.keys(porLog).sort();
+    bm.innerHTML = `
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:12px;">
+        ${MATERIALES_MONDAY.length} materiales · ${logs.length} logísticos asignados en Monday
+      </div>
+      ${logs.map(log => {
+        const g = porLog[log];
+        return `
+        <div style="border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;">
+          <div style="padding:10px 14px;background:var(--paper);display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="this.parentElement.classList.toggle('open')">
+            <div style="font-weight:700;color:var(--navy);">${log} <span style="font-weight:400;color:var(--ink-soft);font-size:12px;">(${g.items.length} items · Bolsa: ${fmt(g.totalBolsa)})</span></div>
+            <span style="color:var(--ink-soft);font-size:11px;">▼</span>
+          </div>
+          <div style="display:none;padding:0 14px 14px;">
+            <div class="table-wrap"><table>
+              <thead><tr><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>Cant</th><th>Bolsa</th><th>Total</th></tr></thead>
+              <tbody>${g.items.slice(0,50).map(m => `<tr>
+                <td class="tl">${m.oc || '—'}</td>
+                <td class="tl">${m.codigo || '—'}</td>
+                <td class="tl desc">${m.descripcion || '—'}</td>
+                <td>${m.cantidad}</td>
+                <td>${fmt(m.bolsa)}</td>
+                <td>${fmt(m.bolsa * m.cantidad)}</td>
+              </tr>`).join('')}${g.items.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${g.items.length - 50} más</td></tr>` : ''}</tbody>
+            </table></div>
+          </div>
+        </div>`;
+      }).join('')}`;
+    // Usar CSS toggle para abrir/cerrar
+    bm.querySelectorAll('[style*="cursor:pointer"]').forEach(el => {
+      el.addEventListener('click', function() {
+        const body = this.nextElementSibling;
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+      });
+    });
   }
 }
 
@@ -1531,6 +1591,57 @@ function setBodega(bodega, comprador) {
   // no rerenderizamos el modal para no perder scroll; los cambios se reflejan al guardar/cerrar
 }
 
+function editTierInConfig(nombre) {
+  // Reemplaza la tarjeta de ese comprador con un editor inline
+  const cardId = 'tierCard_' + nombre.replace(/\s/g, '_');
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const tiers = getTiersFor(nombre) || TIERS_DEFAULT;
+  const safeName = nombre.replace(/'/g, "\\'");
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-weight:700;color:var(--navy);">${nombre} — editando</div>
+    </div>
+    <table class="tiers-table">
+      <thead><tr><th>Desde</th><th>Hasta</th><th>Comisión</th><th></th></tr></thead>
+      <tbody id="cfgTiers_${nombre.replace(/\s/g,'_')}">${renderTierRows(tiers)}</tbody>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button class="btn accent" style="font-size:12px;" onclick="saveTierInConfig('${safeName}')">Guardar</button>
+      <button class="btn" style="font-size:12px;" onclick="resetTierInConfig('${safeName}')">Volver a estándar</button>
+      <button class="btn" style="font-size:12px;" onclick="document.getElementById('tabTiers').innerHTML = renderTiersTab();">Cancelar</button>
+    </div>
+  `;
+  card.style.borderColor = 'var(--lime)';
+}
+
+function saveTierInConfig(nombre) {
+  const tbodyId = 'cfgTiers_' + nombre.replace(/\s/g, '_');
+  const rows = document.querySelectorAll('#' + tbodyId + ' tr');
+  const tiers = [];
+  rows.forEach((tr, i) => {
+    const isLast = (i === rows.length - 1);
+    const hastaInput = tr.querySelector('.tier-hasta');
+    const tasaInput = tr.querySelector('.tier-tasa');
+    const hasta = isLast ? null : parseFloat(hastaInput.value);
+    const tasa = parseFloat(tasaInput.value);
+    tiers.push({ hasta: isNaN(hasta) ? null : hasta, tasa: isNaN(tasa) ? 0 : tasa });
+  });
+  TIERS_MAP[nombre] = tiers;
+  store.setTiers(TIERS_MAP);
+  procesarTodo();
+  document.getElementById('tabTiers').innerHTML = renderTiersTab();
+  toast('Escalones actualizados para ' + nombre, 'success');
+}
+
+function resetTierInConfig(nombre) {
+  delete TIERS_MAP[nombre];
+  store.setTiers(TIERS_MAP);
+  procesarTodo();
+  document.getElementById('tabTiers').innerHTML = renderTiersTab();
+  toast(nombre + ' volvió a la regla estándar', 'success');
+}
+
 function addComprador() {
   const nombre = prompt('Nombre del nuevo comprador:');
   if (!nombre) return;
@@ -1558,16 +1669,20 @@ function renderTiersTab() {
   }
   return `
     <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">
-      Cada comprador puede tener sus propios escalones de comisión. También puedes editarlos desde la vista de detalle de cada comprador.
+      Haz clic en <b>Editar</b> para cambiar los escalones de un comprador. Los cambios se aplican inmediatamente.
     </div>
     ${compradores.map(nombre => {
       const isCustom = isCustomTiers(nombre);
       const tiers = getTiersFor(nombre) || TIERS_DEFAULT;
+      const safeName = nombre.replace(/'/g, "\\'");
       return `
-        <div style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div class="tier-card-config" id="tierCard_${nombre.replace(/\s/g,'_')}">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <div style="font-weight:700;color:var(--navy);">${nombre}</div>
-            <span class="rules-tag ${isCustom ? 'custom' : ''}">${isCustom ? 'Personalizado' : 'Estándar'}</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span class="rules-tag ${isCustom ? 'custom' : ''}">${isCustom ? 'Personalizado' : 'Estándar'}</span>
+              <button class="btn" style="padding:4px 10px;font-size:11px;" onclick="editTierInConfig('${safeName}')">Editar</button>
+            </div>
           </div>
           <div style="font-size:12px;color:var(--ink-soft);">
             ${tiers.map((t,i) => {
@@ -1600,11 +1715,12 @@ function renderUploadModal() {
       <div style="margin-top:20px;">
         <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);font-weight:700;margin-bottom:8px;">Archivos cargados</div>
         <div class="upload-list">
-          ${archivos.map(a => `<div class="file-item">
-            <div>
+          ${archivos.map((a, idx) => `<div class="file-item">
+            <div style="flex:1;">
               <div class="file-name">${a.nombre}</div>
               <div class="file-meta">${a.lineas} líneas · ${monthLabel(a.mes) || 'varias fechas'} · subido ${new Date(a.fecha).toLocaleString('es-CO')}</div>
             </div>
+            <button class="file-del" onclick="eliminarArchivo(${ARCHIVOS.length - 1 - idx})" title="Eliminar este archivo y sus líneas">×</button>
           </div>`).join('')}
         </div>
       </div>` : ''}
@@ -1762,7 +1878,8 @@ async function procesarArchivoExcel(file) {
       lineas: Object.keys(nuevas).length,
       duplicados: dupExactos,
       discrepancias: discrepancias.length,
-      mes: mesesTocados.size === 1 ? Array.from(mesesTocados)[0] : ''
+      mes: mesesTocados.size === 1 ? Array.from(mesesTocados)[0] : '',
+      hashes: Object.keys(nuevas)
     });
     store.setArchivos(ARCHIVOS);
 
@@ -1898,6 +2015,34 @@ async function restaurarRespaldo(file) {
   } catch(e) {
     rEl.innerHTML = `<div style="color:var(--red);font-size:13px;">Error: ${e.message}</div>`;
   }
+}
+
+function eliminarArchivo(idx) {
+  const arch = ARCHIVOS[idx];
+  if (!arch) return;
+  const ok = confirm(`¿Eliminar "${arch.nombre}" y sus ${arch.lineas} líneas de compras?`);
+  if (!ok) return;
+  // Eliminar las líneas de COMPRAS que vinieron de este archivo
+  const hashesDelArchivo = new Set(arch.hashes || []);
+  if (hashesDelArchivo.size > 0) {
+    Object.keys(COMPRAS).forEach(k => {
+      if (hashesDelArchivo.has(k)) delete COMPRAS[k];
+    });
+  } else {
+    // Fallback: si no hay hashes guardados (archivos viejos), eliminar por mes
+    if (arch.mes) {
+      Object.keys(COMPRAS).forEach(k => {
+        if (monthKey(COMPRAS[k].fecha) === arch.mes) delete COMPRAS[k];
+      });
+    }
+  }
+  store.setCompras(COMPRAS);
+  ARCHIVOS.splice(idx, 1);
+  store.setArchivos(ARCHIVOS);
+  detectAvailableMonths();
+  procesarTodo();
+  openModal('upload');
+  toast(`"${arch.nombre}" eliminado`, 'success');
 }
 
 function limpiarAntes() {
