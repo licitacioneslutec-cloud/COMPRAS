@@ -11,32 +11,55 @@
   :root {
     --navy: #16283f; --navy-deep: #0f1d2e; --lime: #b8d726; --lime-dim: #97b31c;
     --paper: #f5f6f4; --card: #ffffff; --ink: #1a2433; --ink-soft: #5a6675;
-    --line: #e3e7ec; --green: #2a9d5c; --amber: #d99a2b; --red: #c94a4a;
+    --line: #e3e7ec; --green: #2a9d5c; --amber: #d99a2b; --red: #c94a4a; --blue: #4a7bc9;
   }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
-  .topbar { background: var(--navy); padding: 0 28px; display: flex; align-items: center; gap: 20px; height: 56px; border-bottom: 3px solid var(--lime); }
+
+  /* ========== TOPBAR ========== */
+  .topbar { background: var(--navy); padding: 0 20px; display: flex; align-items: center; gap: 16px; height: 56px; border-bottom: 3px solid var(--lime); flex-wrap: wrap; }
   .brand { color: #fff; font-weight: 700; letter-spacing: 3px; font-size: 18px; }
   .brand span { color: var(--lime); }
-  .tab-label { color: rgba(255,255,255,0.6); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin-left: auto; }
-  .topbar-actions { display: flex; gap: 8px; }
-  .top-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; }
+  .tab-label { color: rgba(255,255,255,0.6); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .topbar-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .top-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; white-space: nowrap; }
   .top-btn:hover { background: rgba(255,255,255,0.15); }
   .top-btn.primary { background: var(--lime); color: var(--navy); border-color: var(--lime); }
   .top-btn.primary:hover { background: var(--lime-dim); }
   .top-btn .ic { font-size: 14px; }
   .top-btn.spinning .ic { animation: spin 0.8s linear infinite; display: inline-block; }
-  .header { padding: 28px 28px 16px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
-  .header h1 { font-size: 28px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
+
+  /* ========== HEADER ========== */
+  .header { padding: 24px 28px 14px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  .header h1 { font-size: 26px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
   .header .sub { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .updated { font-size: 11px; color: var(--ink-soft); }
   .month-picker { background: var(--navy); color: #fff; padding: 6px 10px 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .month-picker label { color: rgba(255,255,255,0.6); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
   .month-picker select { background: transparent; color: var(--lime); border: none; font-size: 13px; font-weight: 700; cursor: pointer; padding: 2px 4px; outline: none; }
   .month-picker select option { background: var(--navy); color: #fff; }
-  .updated { font-size: 11px; color: var(--ink-soft); }
-  .crumb { padding: 0 28px 16px; font-size: 13px; color: var(--ink-soft); display: none; }
+
+  .crumb { padding: 0 28px 12px; font-size: 13px; color: var(--ink-soft); display: none; }
   .crumb a { color: var(--lime-dim); cursor: pointer; text-decoration: none; font-weight: 600; }
   .crumb a:hover { text-decoration: underline; }
+
+  /* ========== EJECUTIVO LUTEC ========== */
+  .exec-card { margin: 0 28px 24px; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%); border-radius: 14px; padding: 24px 26px; color: #fff; }
+  .exec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+  .exec-head h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: var(--lime); font-weight: 700; }
+  .exec-head .exec-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+  .exec-toggle { display: flex; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 3px; }
+  .exec-toggle button { background: transparent; border: none; color: rgba(255,255,255,0.65); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .exec-toggle button.active { background: var(--lime); color: var(--navy); }
+  .exec-body { min-height: 180px; }
+  .exec-kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .exec-kpi { text-align: center; padding: 12px; }
+  .exec-kpi .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.6); font-weight: 600; }
+  .exec-kpi .val { font-size: 34px; font-weight: 700; color: var(--lime); margin-top: 8px; letter-spacing: -1px; }
+  .exec-kpi .sub { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+  .exec-chart-wrap { position: relative; height: 260px; }
+
+  /* ========== STATS + CHARTS + BUYERS ========== */
   .stats { padding: 0 28px 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
   .stat .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
@@ -44,13 +67,15 @@
   .stat.accent { background: var(--navy); }
   .stat.accent .lbl { color: rgba(255,255,255,0.6); }
   .stat.accent .val { color: var(--lime); }
-  .sec-title { padding: 8px 28px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-soft); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+
+  .sec-title { padding: 8px 28px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-soft); font-weight: 700; }
   .charts-grid { padding: 0 28px 24px; display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
   .chart-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
   .chart-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--navy); margin-bottom: 12px; font-weight: 700; }
   .chart-wrap { position: relative; height: 260px; }
   .chart-wrap.tall { height: 300px; }
-  .buyers { padding: 0 28px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+  .buyers { padding: 0 28px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .buyer { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; position: relative; overflow: hidden; }
   .buyer:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,40,63,0.12); border-color: var(--navy); }
   .buyer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--lime); }
@@ -69,6 +94,8 @@
   .buyer-foot { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--ink-soft); }
   .go { color: var(--lime-dim); font-weight: 700; }
   .custom-tag { font-size: 10px; background: #fbf1dd; color: var(--amber); padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ========== DETAIL VIEW ========== */
   .detail { display: none; padding: 0 28px 40px; }
   .detail.active { display: block; }
   .dashboard.hidden { display: none; }
@@ -77,11 +104,14 @@
   .btn:hover { background: var(--navy); color: #fff; }
   .btn.accent { background: var(--lime); color: var(--navy); border-color: var(--lime); }
   .btn.accent:hover { background: var(--lime-dim); border-color: var(--lime-dim); color: var(--navy); }
+  .btn.danger { color: var(--red); border-color: #e6c7c7; }
+  .btn.danger:hover { background: var(--red); color: #fff; }
+
   table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
-  thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; }
-  thead th:first-child, thead th:nth-child(2) { text-align: left; }
+  thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; white-space: nowrap; }
+  thead th:first-child, thead th:nth-child(2), thead th.tl { text-align: left; }
   tbody td { padding: 11px 10px; text-align: right; font-size: 13px; border-bottom: 1px solid var(--line); }
-  tbody td:first-child, tbody td:nth-child(2) { text-align: left; }
+  tbody td:first-child, tbody td:nth-child(2), tbody td.tl { text-align: left; }
   tbody tr:hover { background: var(--paper); }
   tbody tr:last-child td { border-bottom: none; }
   .desc { font-weight: 600; color: var(--ink); }
@@ -94,223 +124,348 @@
   .comis-val { font-weight: 700; color: var(--navy); }
   tfoot td { background: var(--lime); color: var(--navy); font-weight: 700; padding: 14px 10px; text-align: right; font-size: 14px; }
   tfoot td:first-child { text-align: left; }
-  .comis-table-wrap { margin-bottom: 24px; overflow-x: auto; }
-  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
-  .rules-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-  .rules-head h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
-  .rules-head .rules-tag { font-size: 11px; color: var(--ink-soft); }
-  .rules-tag.custom { color: var(--amber); font-weight: 700; }
-  .tiers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
-  .tier-box { background: var(--paper); border-radius: 8px; padding: 10px 12px; }
-  .tier-box label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
-  .tier-box input { width: 100%; border: 1px solid var(--line); padding: 6px 8px; border-radius: 4px; font-size: 13px; font-weight: 600; color: var(--navy); background: #fff; }
-  .tier-box input:focus { outline: none; border-color: var(--lime); }
-  .tier-box .arrow { text-align: center; color: var(--ink-soft); font-size: 14px; margin: 4px 0; }
-  .tier-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .table-wrap { margin-bottom: 24px; overflow-x: auto; }
+  .table-wrap table { min-width: 100%; }
+
+  /* ========== TIERS EDITOR (nueva tabla limpia) ========== */
+  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .rules-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .rules-head h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--navy); font-weight: 700; }
+  .rules-tag { font-size: 11px; color: var(--ink-soft); padding: 3px 8px; background: var(--paper); border-radius: 4px; }
+  .rules-tag.custom { color: var(--amber); background: #fbf1dd; font-weight: 700; }
+  .tiers-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .tiers-table th { text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); font-weight: 600; border-bottom: 1px solid var(--line); background: transparent; }
+  .tiers-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .tiers-table tbody tr:last-child td { border-bottom: none; }
+  .tier-input { width: 90px; border: 1px solid var(--line); padding: 6px 8px; border-radius: 4px; font-size: 13px; color: var(--navy); background: #fff; font-weight: 600; }
+  .tier-input:focus { outline: none; border-color: var(--lime); }
+  .tier-input:disabled { background: var(--paper); color: var(--ink-soft); }
+  .tier-suffix { color: var(--ink-soft); font-size: 12px; margin-left: 4px; }
+  .tier-del { background: transparent; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; }
+  .tier-del:hover { background: #fbe6e6; }
+  .tier-add-btn { background: transparent; border: 1px dashed var(--line); color: var(--ink-soft); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .tier-add-btn:hover { border-color: var(--lime); color: var(--navy); }
+  .tier-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ========== SECCIONES EXTRAS (acordeones) ========== */
+  .extras { padding: 0 28px 40px; }
+  .accordion { background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .accordion-head { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+  .accordion-head:hover { background: var(--paper); }
+  .accordion-head .title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; }
+  .accordion-head .count { background: var(--paper); color: var(--ink-soft); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+  .accordion-head .count.warn { background: #fbf1dd; color: var(--amber); }
+  .accordion-head .count.err { background: #f0e6e6; color: var(--red); }
+  .accordion-head .caret { color: var(--ink-soft); font-size: 12px; transition: transform 0.15s; }
+  .accordion.open .accordion-head .caret { transform: rotate(180deg); }
+  .accordion-body { display: none; padding: 0 18px 18px; }
+  .accordion.open .accordion-body { display: block; }
+  .empty-msg { padding: 16px; color: var(--ink-soft); font-size: 13px; text-align: center; }
+
+  /* ========== MODAL ========== */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(15,29,46,0.6); z-index: 200; display: none; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+  .modal-backdrop.show { display: flex; }
+  .modal { background: var(--card); border-radius: 14px; max-width: 900px; width: 100%; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .modal-head h2 { font-size: 18px; color: var(--navy); font-weight: 700; }
+  .modal-close { background: transparent; border: none; font-size: 24px; color: var(--ink-soft); cursor: pointer; padding: 4px 12px; border-radius: 6px; line-height: 1; }
+  .modal-close:hover { background: var(--paper); }
+  .modal-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .modal-tabs button { background: transparent; border: none; padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .modal-tabs button.active { color: var(--navy); border-bottom-color: var(--lime); }
+  .modal-tab-content { display: none; }
+  .modal-tab-content.active { display: block; }
+
+  /* Config: bodegas → comprador */
+  .bodegas-table { max-height: 500px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .bodegas-table table { border-radius: 0; border: none; min-width: 100%; }
+  .bodega-row select { border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; color: var(--navy); background: #fff; width: 100%; max-width: 240px; }
+  .bodega-count { font-size: 11px; color: var(--ink-soft); }
+
+  /* Upload de Excel */
+  .upload-drop { border: 2px dashed var(--line); border-radius: 12px; padding: 40px 20px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: all 0.15s; }
+  .upload-drop:hover, .upload-drop.dragover { border-color: var(--lime); background: #fafcf4; }
+  .upload-drop .ic { font-size: 36px; color: var(--ink-soft); margin-bottom: 8px; }
+  .upload-drop p { color: var(--ink-soft); font-size: 13px; }
+  .upload-drop input { display: none; }
+  .upload-result { background: var(--paper); padding: 14px 16px; border-radius: 8px; margin-top: 12px; font-size: 13px; line-height: 1.7; }
+  .upload-result .r-line { display: flex; justify-content: space-between; }
+  .upload-result .r-line b { color: var(--navy); }
+  .upload-list { max-height: 200px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+  .upload-list .file-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); align-items: center; }
+  .upload-list .file-item:last-child { border-bottom: none; }
+  .upload-list .file-name { color: var(--navy); font-weight: 600; }
+  .upload-list .file-meta { font-size: 11px; color: var(--ink-soft); }
+
+  /* Backup */
+  .backup-section { padding: 14px; background: var(--paper); border-radius: 8px; margin-bottom: 14px; }
+  .backup-section h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--navy); margin-bottom: 6px; font-weight: 700; }
+  .backup-section p { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; }
+
+  /* Storage bar */
+  .storage-bar { margin-top: 16px; padding: 12px; background: var(--paper); border-radius: 8px; }
+  .storage-bar .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); margin-bottom: 6px; }
+  .storage-bar .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .storage-bar .fill { height: 100%; background: var(--lime); transition: width 0.3s; }
+  .storage-bar .fill.warn { background: var(--amber); }
+  .storage-bar .fill.err { background: var(--red); }
+  .storage-bar .info { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+  /* ========== STATE MESSAGES ========== */
   .state { padding: 60px 28px; text-align: center; color: var(--ink-soft); }
   .state .spin { width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--lime); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 100; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 250; max-width: 380px; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.success { background: var(--green); }
   .toast.error { background: var(--red); }
-  @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+  .toast.warn { background: var(--amber); }
+
+  @media (max-width: 900px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .exec-kpi-grid { grid-template-columns: 1fr; }
+    .exec-kpi .val { font-size: 26px; }
+  }
   @media (max-width: 720px) {
     .stats { grid-template-columns: 1fr 1fr; }
-    .header h1 { font-size: 22px; }
+    .header h1 { font-size: 20px; }
     table { font-size: 11px; }
     .hide-sm { display: none; }
-    .topbar { padding: 0 14px; }
-    .header { padding: 20px 14px 12px; }
-    .stats, .buyers, .charts-grid, .detail, .crumb, .sec-title { padding-left: 14px; padding-right: 14px; }
-    .top-btn { padding: 6px 10px; font-size: 11px; }
+    .topbar { padding: 0 12px; }
+    .header { padding: 18px 14px 10px; }
+    .stats, .buyers, .charts-grid, .detail, .crumb, .sec-title, .extras, .exec-card { padding-left: 14px; padding-right: 14px; }
+    .exec-card { margin-left: 14px; margin-right: 14px; }
+    .top-btn { padding: 6px 8px; font-size: 11px; }
     .tab-label { display: none; }
   }
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">LU<span>TEC</span></div>
-    <div class="tab-label">Comisiones de compras</div>
-    <div class="topbar-actions">
-      <button class="top-btn" id="reloadBtn" onclick="cargar(true)"><span class="ic">↻</span> Recargar</button>
-      <button class="top-btn primary" onclick="exportExcel()"><span class="ic">↓</span> Excel</button>
+
+<!-- ========== TOPBAR ========== -->
+<div class="topbar">
+  <div class="brand">LU<span>TEC</span></div>
+  <div class="tab-label">Comisiones de compras</div>
+  <div class="topbar-actions">
+    <button class="top-btn" onclick="openModal('config')"><span class="ic">⚙</span> Configurar</button>
+    <button class="top-btn" onclick="openModal('upload')"><span class="ic">↑</span> Subir Excel</button>
+    <button class="top-btn" onclick="openModal('backup')"><span class="ic">💾</span> Respaldo</button>
+    <button class="top-btn" id="reloadBtn" onclick="cargarMonday(true)"><span class="ic">↻</span> Recargar</button>
+    <button class="top-btn primary" onclick="exportarExcelCompleto()"><span class="ic">↓</span> Excel</button>
+  </div>
+</div>
+
+<!-- ========== HEADER ========== -->
+<div class="header">
+  <div>
+    <h1 id="viewTitle">Comisiones del equipo</h1>
+    <div class="sub" id="viewSub">Cargando datos desde Monday…</div>
+  </div>
+  <div class="header-right">
+    <div class="updated" id="updatedAt"></div>
+    <div class="month-picker">
+      <label for="monthSelect">Periodo:</label>
+      <select id="monthSelect" onchange="onMonthChange(this.value)">
+        <option value="__all__">Todos los meses</option>
+      </select>
     </div>
   </div>
+</div>
 
-  <div class="header">
-    <div>
-      <h1 id="viewTitle">Comisiones del equipo</h1>
-      <div class="sub" id="viewSub">Cargando datos desde Monday…</div>
-    </div>
-    <div class="header-right">
-      <div class="updated" id="updatedAt"></div>
-      <div class="month-picker">
-        <label for="monthSelect">Periodo:</label>
-        <select id="monthSelect" onchange="onMonthChange(this.value)">
-          <option value="__all__">Todos los meses</option>
-        </select>
-      </div>
-    </div>
+<div class="crumb" id="crumb"><a onclick="showDashboard()">← Todos los compradores</a></div>
+
+<!-- ========== DASHBOARD ========== -->
+<div class="dashboard" id="dashboard">
+  <div id="loadingState" class="state"><div class="spin"></div>Consultando Monday…</div>
+  <div id="errorState" class="state" style="display:none;">
+    No se pudieron cargar los datos.<br><br>
+    <button class="btn accent" onclick="cargarMonday()">Reintentar</button>
   </div>
 
-  <div class="crumb" id="crumb"><a onclick="showDashboard()">← Todos los compradores</a></div>
+  <div id="content" style="display:none;">
 
-  <div class="dashboard" id="dashboard">
-    <div id="loadingState" class="state"><div class="spin"></div>Consultando comisiones en vivo…</div>
-    <div id="errorState" class="state" style="display:none;">
-      No se pudieron cargar los datos.<br><br>
-      <button class="btn accent" onclick="cargar()">Reintentar</button>
-    </div>
-    <div id="content" style="display:none;">
-      <div class="stats" id="statStrip"></div>
-
-      <div class="sec-title">Resumen visual</div>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h3>Comprado vs Presupuesto por comprador</h3>
-          <div class="chart-wrap tall"><canvas id="chartBars"></canvas></div>
+    <!-- Ejecutivo LUTEC -->
+    <div class="exec-card">
+      <div class="exec-head">
+        <div>
+          <h2>Resumen ejecutivo · LUTEC</h2>
+          <div class="exec-sub" id="execSub">Vista consolidada del periodo</div>
         </div>
-        <div class="chart-card">
-          <h3>Participación en comisiones</h3>
-          <div class="chart-wrap tall"><canvas id="chartDonut"></canvas></div>
-        </div>
-        <div class="chart-card" style="grid-column: 1 / -1;">
-          <h3>Margen de utilidad promedio por comprador (%)</h3>
-          <div class="chart-wrap"><canvas id="chartMargin"></canvas></div>
+        <div class="exec-toggle">
+          <button class="active" data-view="kpi" onclick="switchExecView('kpi')">KPIs</button>
+          <button data-view="bars" onclick="switchExecView('bars')">Barras</button>
+          <button data-view="waterfall" onclick="switchExecView('waterfall')">Waterfall</button>
         </div>
       </div>
-
-      <div class="sec-title">Compradores</div>
-      <div class="buyers" id="buyers"></div>
+      <div class="exec-body" id="execBody"></div>
     </div>
+
+    <!-- Stats por comprador -->
+    <div class="stats" id="statStrip"></div>
+
+    <!-- Gráficas por comprador -->
+    <div class="sec-title">Análisis por comprador</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Comprado vs Presupuesto</h3>
+        <div class="chart-wrap tall"><canvas id="chartBars"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Participación en comisiones</h3>
+        <div class="chart-wrap tall"><canvas id="chartDonut"></canvas></div>
+      </div>
+      <div class="chart-card" style="grid-column: 1 / -1;">
+        <h3>Margen de utilidad promedio (%)</h3>
+        <div class="chart-wrap"><canvas id="chartMargin"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Compradores -->
+    <div class="sec-title">Compradores</div>
+    <div class="buyers" id="buyers"></div>
+
+    <!-- Secciones extras (acordeones) -->
+    <div class="extras" id="extras"></div>
+  </div>
+</div>
+
+<!-- ========== DETAIL VIEW ========== -->
+<div class="detail" id="detail">
+  <div class="detail-actions">
+    <button class="btn" onclick="showDashboard()">← Volver al equipo</button>
+    <button class="btn accent" onclick="exportarExcelComprador()">↓ Descargar Excel de este comprador</button>
   </div>
 
-  <div class="detail" id="detail">
-    <div class="detail-actions">
-      <button class="btn" onclick="showDashboard()">← Volver al equipo</button>
-      <button class="btn accent" onclick="exportBuyerExcel()">↓ Descargar Excel de este comprador</button>
-    </div>
+  <div class="rules" id="tiersEditor"></div>
 
-    <div class="rules">
-      <div class="rules-head">
-        <h3>Tabla de comisión — <span id="tierBuyerName"></span></h3>
-        <span class="rules-tag" id="tierMode">Regla estándar del equipo</span>
-      </div>
-      <div class="tiers-grid" id="tiersGrid"></div>
-      <div class="tier-actions">
-        <button class="btn accent" onclick="saveTiers()">Guardar cambios para este comprador</button>
-        <button class="btn" onclick="resetTiers()">Volver a la regla estándar</button>
-      </div>
-    </div>
+  <div class="stats" id="detailStats"></div>
+  <div class="table-wrap"><table id="detailTable"></table></div>
 
-    <div class="stats" id="detailStats"></div>
-    <div class="comis-table-wrap"><table id="detailTable"></table></div>
-  </div>
+  <div id="detailFaltantes"></div>
+</div>
 
-  <div class="toast" id="toast"></div>
+<!-- ========== MODAL ========== -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// =====================================================================
-// CONFIGURACIÓN
-// =====================================================================
+'use strict';
+
+/* =============================================================================
+   CONFIGURACIÓN
+   ============================================================================= */
 const API_URL = "https://licitaciones3.app.n8n.cloud/webhook/comisiones";
 
-// Escalones por defecto (regla estándar del equipo)
 const TIERS_DEFAULT = [
-  { hasta: 10, tasa: 0 },      // 0-10% utilidad → 0% comisión
-  { hasta: 20, tasa: 0.25 },   // 10-20% → 0.25%
-  { hasta: 30, tasa: 0.50 },   // 20-30% → 0.50%
-  { hasta: null, tasa: 0.75 }  // >= 30% → 0.75%
+  { hasta: 10, tasa: 0 },
+  { hasta: 20, tasa: 0.25 },
+  { hasta: 30, tasa: 0.50 },
+  { hasta: null, tasa: 0.75 }
 ];
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const PALETTE = ['#16283f','#b8d726','#2a9d5c','#d99a2b','#c94a4a','#4a7bc9','#8e5ac9','#e07b3f','#5aa7c9','#7fb32b'];
 
-// =====================================================================
-// ESTADO
-// =====================================================================
-let RAW = [];                // datos crudos del webhook (con todas las líneas de todos los meses)
-let DATA = [];               // datos filtrados por mes + recalculados con escalones
-let currentBuyerIdx = null;  // índice del comprador en vista detalle
-let charts = {};             // instancias de Chart.js
-let currentMonth = '__all__'; // "__all__" o "YYYY-MM"
-let availableMonths = [];    // meses detectados en los datos, ordenados desc
+/* =============================================================================
+   STORAGE (capa aislada — mañana se cambia a Firestore acá y ya)
+   ============================================================================= */
+const STORAGE_KEYS = {
+  compras: 'lutec_compras_v1',        // { hash: { fecha, oc, codigo, ...} }
+  bodegas: 'lutec_bodegas_v1',        // { bodegaNombre: compradorNombre }
+  tiers: 'lutec_tiers_v1',            // { compradorNombre: [{hasta,tasa}] }
+  archivos: 'lutec_archivos_v1'       // [{ nombre, fecha, lineas, mes }]
+};
 
-// =====================================================================
-// UTILS
-// =====================================================================
+function _load(key, def) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : def;
+  } catch(e) {
+    console.error('Storage load error', key, e);
+    return def;
+  }
+}
+function _save(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  } catch(e) {
+    console.error('Storage save error', key, e);
+    toast('Error guardando: espacio agotado en el navegador. Haz respaldo y limpia meses antiguos.', 'error');
+    return false;
+  }
+}
+
+const store = {
+  getCompras: () => _load(STORAGE_KEYS.compras, {}),
+  setCompras: (v) => _save(STORAGE_KEYS.compras, v),
+  getBodegas: () => _load(STORAGE_KEYS.bodegas, {}),
+  setBodegas: (v) => _save(STORAGE_KEYS.bodegas, v),
+  getTiers: () => _load(STORAGE_KEYS.tiers, {}),
+  setTiers: (v) => _save(STORAGE_KEYS.tiers, v),
+  getArchivos: () => _load(STORAGE_KEYS.archivos, []),
+  setArchivos: (v) => _save(STORAGE_KEYS.archivos, v),
+  // Uso aproximado en bytes
+  usage: () => {
+    let total = 0;
+    Object.values(STORAGE_KEYS).forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v) total += v.length + k.length;
+    });
+    return total;
+  }
+};
+
+/* =============================================================================
+   ESTADO GLOBAL
+   ============================================================================= */
+let MATERIALES_MONDAY = [];   // datos crudos de Monday
+let COMPRAS = {};             // datos del Excel (acumulados en localStorage)
+let BODEGAS_MAP = {};         // bodega → comprador
+let TIERS_MAP = {};           // comprador → tiers custom
+let ARCHIVOS = [];            // historial de subidas
+
+let currentMonth = '__all__';
+let availableMonths = [];
+let currentBuyerName = null;
+let charts = {};
+let execView = 'kpi';
+
+// Resultado del cruce (se recalcula cada vez)
+let CROSSED = {
+  lineasComision: [],   // líneas del Excel con match a Monday → cuentan
+  pendientes: [],       // Monday sin comprar completo → no cuentan
+  sinPedido: [],        // Excel sin match en Monday → no cuentan
+  conflictos: [],       // OC+Código en Monday con múltiples items → aviso
+  discrepancias: [],    // (por ahora vacío) — solo se llena al subir excel
+  porComprador: {}      // comprador → { comprado, negociado, utilidad, comision, lineas, pctMargen }
+};
+
+let ULTIMA_DISCREPANCIAS = [];  // guardadas de la última subida para mostrar
+
+/* =============================================================================
+   UTILS
+   ============================================================================= */
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CO');
 const pct = n => (n||0).toFixed(1) + '%';
-const initials = name => name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+const initials = name => (name||'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 
 function toast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'toast show ' + type;
-  setTimeout(() => el.className = 'toast ' + type, 2200);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast ' + type, 3000);
 }
 
-// Paleta de colores para gráficas (rotativa)
-const PALETTE = ['#16283f','#b8d726','#2a9d5c','#d99a2b','#c94a4a','#4a7bc9','#8e5ac9','#e07b3f','#5aa7c9','#7fb32b'];
-
-// =====================================================================
-// LOCALSTORAGE: escalones personalizados por comprador
-// =====================================================================
-const TIERS_KEY = 'lutec_tiers_v1';
-
-function loadTiersMap() {
-  try {
-    const raw = localStorage.getItem(TIERS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch(e) { return {}; }
-}
-
-function saveTiersMap(map) {
-  localStorage.setItem(TIERS_KEY, JSON.stringify(map));
-}
-
-function getTiersFor(buyerName) {
-  const map = loadTiersMap();
-  return map[buyerName] || null; // null = usa la regla por defecto
-}
-
-function isCustomTiers(buyerName) {
-  return getTiersFor(buyerName) !== null;
-}
-
-function setTiersFor(buyerName, tiers) {
-  const map = loadTiersMap();
-  map[buyerName] = tiers;
-  saveTiersMap(map);
-}
-
-function removeTiersFor(buyerName) {
-  const map = loadTiersMap();
-  delete map[buyerName];
-  saveTiersMap(map);
-}
-
-// =====================================================================
-// CÁLCULO DE COMISIÓN CON ESCALONES
-// =====================================================================
-// Recibe utilidad en % (ej 15.5) y una lista de escalones
-// Devuelve la tasa de comisión en % (ej 0.25)
-function tasaSegunEscalones(pctUtil, tiers) {
-  if (pctUtil <= 0) return 0;
-  for (const t of tiers) {
-    if (t.hasta === null) return t.tasa;      // último escalón
-    if (pctUtil < t.hasta) return t.tasa;
-  }
-  return tiers[tiers.length-1].tasa;
-}
-
-// Extrae "YYYY-MM" de una fecha "YYYY-MM-DD..."; devuelve '' si no hay fecha
 function monthKey(fecha) {
   if (!fecha) return '';
   return String(fecha).substring(0, 7);
 }
 
-// Etiqueta legible: "2026-04" -> "Abril 2026"
 function monthLabel(key) {
   if (key === '__all__') return 'Todos los meses';
   if (!key || key.length < 7) return 'Sin fecha';
@@ -319,90 +474,39 @@ function monthLabel(key) {
   return (MONTH_NAMES[idx] || m) + ' ' + y;
 }
 
-// Descubre meses disponibles en RAW y llena el <select>
-function detectAvailableMonths() {
-  const set = new Set();
-  let hasNoDate = false;
-  RAW.forEach(b => b.lineas.forEach(l => {
-    const k = monthKey(l.fecha);
-    if (k) set.add(k); else hasNoDate = true;
-  }));
-  availableMonths = Array.from(set).sort().reverse(); // más reciente primero
-
-  const sel = document.getElementById('monthSelect');
-  const previousValue = sel.value;
-  sel.innerHTML = '<option value="__all__">Todos los meses</option>' +
-    availableMonths.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('') +
-    (hasNoDate ? '<option value="__nodate__">Sin fecha</option>' : '');
-
-  // preservar selección si sigue existiendo; sino, ir al mes más reciente
-  if (previousValue && (previousValue === '__all__' || previousValue === '__nodate__' || availableMonths.includes(previousValue))) {
-    sel.value = previousValue;
-    currentMonth = previousValue;
-  } else if (availableMonths.length) {
-    sel.value = availableMonths[0];
-    currentMonth = availableMonths[0];
-  } else {
-    sel.value = '__all__';
-    currentMonth = '__all__';
-  }
+function fmtFecha(f) {
+  if (!f) return '—';
+  const [y,m,d] = String(f).split('-');
+  return d ? `${d}/${m}/${y.substring(2)}` : f;
 }
 
-// Filtra las líneas de cada comprador según el mes activo
-function filtrarPorMes(lineas) {
-  if (currentMonth === '__all__') return lineas;
-  if (currentMonth === '__nodate__') return lineas.filter(l => !monthKey(l.fecha));
-  return lineas.filter(l => monthKey(l.fecha) === currentMonth);
+// Extrae solo el número de una OC (ej "OC 26007" → "26007")
+function normOC(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  const m = s.match(/\d+/);
+  return m ? m[0] : s;
 }
 
-// Recalcula DATA: filtra por mes, aplica escalones personalizados, y recalcula totales
-function recalcularData() {
-  DATA = RAW.map(buyer => {
-    const tiers = getTiersFor(buyer.nombre) || TIERS_DEFAULT;
-    const lineasFiltradas = filtrarPorMes(buyer.lineas);
-    const lineas = lineasFiltradas.map(l => {
-      const tasa = tasaSegunEscalones(l.pctUtil, tiers);
-      const totalCompra = l.totalCompra || (l.compra * l.cant);
-      const valorComision = Math.round(totalCompra * tasa / 100);
-      return { ...l, pctComis: tasa, valorComision };
-    });
-    // recalcular totales sobre las líneas filtradas (no confiar en los del webhook, que suman TODO)
-    const comprado = lineas.reduce((s,l) => s + (l.totalCompra || l.compra*l.cant), 0);
-    const negociado = lineas.reduce((s,l) => s + (l.totalBolsa || l.bolsa*l.cant), 0);
-    const utilidad = lineas.reduce((s,l) => s + (l.utilTotal || 0), 0);
-    const comision = lineas.reduce((s,l) => s + l.valorComision, 0);
-    return {
-      nombre: buyer.nombre,
-      lineas,
-      comprado, negociado, utilidad, comision,
-      pctMargen: negociado > 0 ? (utilidad / negociado) * 100 : 0
-    };
-  }).filter(b => b.lineas.length > 0); // ocultar compradores sin líneas en el mes
+// Normaliza código de inventario (uppercase, trim)
+function normCod(v) {
+  return v ? String(v).trim().toUpperCase() : '';
 }
 
-// Callback del <select>
-function onMonthChange(value) {
-  currentMonth = value;
-  recalcularData();
-  if (currentBuyerIdx !== null) {
-    // busca el mismo comprador en la nueva DATA (puede haber cambiado el índice)
-    const buyerName = (RAW[currentBuyerIdx] && RAW[currentBuyerIdx].nombre) || null;
-    const newIdx = DATA.findIndex(d => d.nombre === buyerName);
-    if (newIdx >= 0) {
-      currentBuyerIdx = newIdx;
-      showDetail(newIdx);
-    } else {
-      showDashboard(); // el comprador no tiene datos en este mes
-    }
-  } else {
-    renderDashboard();
-  }
+// Clave única para match Monday↔Excel
+function keyOCCod(oc, cod) {
+  return normOC(oc) + '|' + normCod(cod);
 }
 
-// =====================================================================
-// FETCH DE DATOS
-// =====================================================================
-async function cargar(isReload=false) {
+// Hash simple para detectar duplicados exactos en el Excel
+function hashLinea(l) {
+  return [l.fecha, l.oc, l.codigo, l.bodega, l.cant, l.valorUnitario, l.tercero].join('§');
+}
+
+/* =============================================================================
+   CARGA DE MONDAY
+   ============================================================================= */
+async function cargarMonday(isReload=false) {
   const btn = document.getElementById('reloadBtn');
   if (isReload) btn.classList.add('spinning');
 
@@ -414,107 +518,501 @@ async function cargar(isReload=false) {
     const res = await fetch(API_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
-    RAW = json.compradores || [];
+
+    // Compatibilidad: aceptamos tanto { materiales: [...] } (nuevo) como { compradores: [...] } (viejo)
+    if (Array.isArray(json.materiales)) {
+      MATERIALES_MONDAY = json.materiales;
+    } else if (Array.isArray(json.compradores)) {
+      // conversión de emergencia si el n8n viejo aún está activo
+      MATERIALES_MONDAY = [];
+      json.compradores.forEach(c => {
+        (c.lineas || []).forEach(l => {
+          MATERIALES_MONDAY.push({
+            codigo: l.codigo || '', oc: '', bolsa: l.bolsa || 0, cantidad: l.cant || 0,
+            descripcion: l.desc || '', proveedor: l.tercero || '',
+            unidad: l.und || 'UND', logistico: c.nombre || '', fecha: l.fecha || ''
+          });
+        });
+      });
+      toast('n8n aún envía formato viejo. Actualiza el nodo Code para usar el match por OC.', 'warn');
+    } else {
+      MATERIALES_MONDAY = [];
+    }
+
+    // Cargar estado local
+    COMPRAS = store.getCompras();
+    BODEGAS_MAP = store.getBodegas();
+    TIERS_MAP = store.getTiers();
+    ARCHIVOS = store.getArchivos();
+
     detectAvailableMonths();
-    recalcularData();
+    procesarTodo();
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('content').style.display = 'block';
-    const totLineas = RAW.reduce((s,b) => s + b.lineas.length, 0);
-    document.getElementById('viewSub').textContent = 'Datos en vivo desde Monday · ' + RAW.length + ' compradores · ' + totLineas + ' materiales en total';
+    const totMat = MATERIALES_MONDAY.length;
+    const totCom = Object.keys(COMPRAS).length;
+    document.getElementById('viewSub').textContent = `Monday: ${totMat} materiales · Excel: ${totCom} líneas de compra cargadas`;
 
     const now = new Date();
     document.getElementById('updatedAt').textContent = 'Actualizado ' + now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
 
-    renderDashboard();
-
-    if (isReload) toast('Datos actualizados', 'success');
+    if (isReload) toast('Datos de Monday actualizados', 'success');
   } catch(e) {
     console.error(e);
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('viewSub').textContent = 'Error de conexión';
+    document.getElementById('viewSub').textContent = 'Error de conexión con Monday';
     if (isReload) toast('Error al recargar', 'error');
   } finally {
     setTimeout(() => btn.classList.remove('spinning'), 400);
   }
 }
 
-// =====================================================================
-// DASHBOARD (vista general)
-// =====================================================================
-function renderDashboard() {
-  const totComp = DATA.reduce((s,d)=>s+d.comprado, 0);
-  const totNeg = DATA.reduce((s,d)=>s+d.negociado, 0);
-  const totUtil = DATA.reduce((s,d)=>s+d.utilidad, 0);
-  const totComis = DATA.reduce((s,d)=>s+d.comision, 0);
-  const totLineas = DATA.reduce((s,d)=>s+d.lineas.length, 0);
+/* =============================================================================
+   MESES DISPONIBLES
+   ============================================================================= */
+function detectAvailableMonths() {
+  const set = new Set();
+  Object.values(COMPRAS).forEach(l => {
+    const k = monthKey(l.fecha);
+    if (k) set.add(k);
+  });
+  availableMonths = Array.from(set).sort().reverse();
 
+  const sel = document.getElementById('monthSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="__all__">Todos los meses</option>' +
+    availableMonths.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+
+  if (prev && (prev === '__all__' || availableMonths.includes(prev))) {
+    sel.value = prev;
+    currentMonth = prev;
+  } else if (availableMonths.length) {
+    sel.value = availableMonths[0];
+    currentMonth = availableMonths[0];
+  } else {
+    sel.value = '__all__';
+    currentMonth = '__all__';
+  }
+}
+
+function onMonthChange(v) {
+  currentMonth = v;
+  procesarTodo();
+  if (currentBuyerName) {
+    // ¿sigue teniendo datos ese comprador en el nuevo mes?
+    if (CROSSED.porComprador[currentBuyerName]) {
+      showDetail(currentBuyerName);
+    } else {
+      showDashboard();
+    }
+  } else {
+    renderDashboard();
+  }
+}
+
+/* =============================================================================
+   MOTOR DE CÁLCULO — cruce Monday ↔ Excel
+   ============================================================================= */
+function tasaSegunEscalones(pctUtil, tiers) {
+  if (pctUtil <= 0) return 0;
+  for (const t of tiers) {
+    if (t.hasta === null || t.hasta === undefined) return t.tasa;
+    if (pctUtil < t.hasta) return t.tasa;
+  }
+  return tiers[tiers.length-1].tasa;
+}
+
+function getTiersFor(nombre) {
+  return TIERS_MAP[nombre] || null;
+}
+function isCustomTiers(nombre) {
+  return !!TIERS_MAP[nombre];
+}
+
+// Determina comprador de una línea del Excel según bodega
+function compradorPorBodega(bodega, fallbackLogistico='') {
+  if (bodega && BODEGAS_MAP[bodega]) return BODEGAS_MAP[bodega];
+  if (fallbackLogistico) return fallbackLogistico;
+  return 'Sin asignar';
+}
+
+// Filtra compras por mes seleccionado
+function comprasDelMes() {
+  const arr = Object.values(COMPRAS);
+  if (currentMonth === '__all__') return arr;
+  return arr.filter(l => monthKey(l.fecha) === currentMonth);
+}
+
+// Construye el índice Monday: key(OC+Cod) → [materiales]
+function indexarMonday() {
+  const idx = {};
+  MATERIALES_MONDAY.forEach(m => {
+    if (!m.oc || !m.codigo) return; // Monday sin OC/código no participa del match
+    const k = keyOCCod(m.oc, m.codigo);
+    if (!idx[k]) idx[k] = [];
+    idx[k].push(m);
+  });
+  return idx;
+}
+
+// Motor principal: cruza Excel del mes con Monday y arma CROSSED
+function procesarTodo() {
+  const idxMonday = indexarMonday();
+  const compras = comprasDelMes();
+
+  const lineasComision = [];
+  const sinPedido = [];
+  const conflictos = new Map(); // clave OC+Cod → { oc, codigo, items:[] }
+
+  // 1. Recorrer compras del Excel
+  compras.forEach(c => {
+    const k = keyOCCod(c.oc, c.codigo);
+    const matches = idxMonday[k];
+
+    if (!matches || matches.length === 0) {
+      // No hay pedido en Monday para esta compra
+      sinPedido.push({
+        ...c,
+        comprador: compradorPorBodega(c.bodega)
+      });
+      return;
+    }
+
+    // Match: usamos el PRIMERO (dijiste que no debería repetirse; si se repite lo señalamos)
+    const monday = matches[0];
+
+    if (matches.length > 1 && !conflictos.has(k)) {
+      conflictos.set(k, {
+        oc: normOC(c.oc),
+        codigo: normCod(c.codigo),
+        descExcel: c.descripcion,
+        items: matches.map(m => ({
+          descripcion: m.descripcion,
+          bolsa: m.bolsa,
+          cantidad: m.cantidad,
+          logistico: m.logistico
+        }))
+      });
+    }
+
+    const bolsa = monday.bolsa || 0;
+    const vunit = c.valorUnitario || 0;
+    const cant = c.cant || 0;
+    const totalCompra = vunit * cant;
+    const totalBolsa = bolsa * cant;
+    const utilTotal = totalBolsa - totalCompra;
+    const pctUtil = bolsa > 0 ? ((bolsa - vunit) / bolsa) * 100 : 0;
+    const comprador = compradorPorBodega(c.bodega, monday.logistico);
+
+    lineasComision.push({
+      fecha: c.fecha,
+      oc: normOC(c.oc),
+      codigo: normCod(c.codigo),
+      descripcion: c.descripcion || monday.descripcion,
+      tercero: c.tercero || '',
+      bodega: c.bodega || '',
+      unidad: c.unidad || monday.unidad,
+      cantExcel: cant,
+      cantMonday: monday.cantidad || 0,
+      vunit,
+      bolsa,
+      totalCompra,
+      totalBolsa,
+      utilTotal,
+      pctUtil,
+      comprador,
+      logistico: monday.logistico,
+      mondayId: monday.id
+    });
+  });
+
+  // 2. Pendientes: items de Monday sin compras suficientes en el Excel del mes
+  //    (comparamos suma de cantidades Excel vs cantidad Monday)
+  const sumaPorKey = {};
+  compras.forEach(c => {
+    const k = keyOCCod(c.oc, c.codigo);
+    sumaPorKey[k] = (sumaPorKey[k] || 0) + (c.cant || 0);
+  });
+
+  const pendientes = [];
+  MATERIALES_MONDAY.forEach(m => {
+    if (!m.oc || !m.codigo) return;
+    const k = keyOCCod(m.oc, m.codigo);
+    const compradoTotal = sumaPorKey[k] || 0;
+    const faltante = (m.cantidad || 0) - compradoTotal;
+    if (faltante > 0) {
+      pendientes.push({
+        oc: normOC(m.oc),
+        codigo: normCod(m.codigo),
+        descripcion: m.descripcion,
+        bolsa: m.bolsa,
+        cantPedida: m.cantidad,
+        cantComprada: compradoTotal,
+        cantFaltante: faltante,
+        logistico: m.logistico,
+        proveedor: m.proveedor
+      });
+    }
+  });
+
+  // 3. Materiales de Monday sin OC/código (no pueden hacer match)
+  const mondaySinOC = MATERIALES_MONDAY.filter(m => !m.oc || !m.codigo);
+  mondaySinOC.forEach(m => {
+    pendientes.push({
+      oc: normOC(m.oc) || '—',
+      codigo: normCod(m.codigo) || '—',
+      descripcion: m.descripcion,
+      bolsa: m.bolsa,
+      cantPedida: m.cantidad,
+      cantComprada: 0,
+      cantFaltante: m.cantidad,
+      logistico: m.logistico,
+      proveedor: m.proveedor,
+      sinDatos: true
+    });
+  });
+
+  // 4. Agrupar por comprador (solo lineasComision cuentan)
+  const porComprador = {};
+  lineasComision.forEach(l => {
+    if (!porComprador[l.comprador]) {
+      porComprador[l.comprador] = {
+        nombre: l.comprador, lineas: [],
+        comprado: 0, negociado: 0, utilidad: 0
+      };
+    }
+    porComprador[l.comprador].lineas.push(l);
+    porComprador[l.comprador].comprado += l.totalCompra;
+    porComprador[l.comprador].negociado += l.totalBolsa;
+    porComprador[l.comprador].utilidad += l.utilTotal;
+  });
+
+  // 5. Aplicar escalones (por comprador) y calcular comisión
+  Object.values(porComprador).forEach(c => {
+    const tiers = getTiersFor(c.nombre) || TIERS_DEFAULT;
+    let totalComision = 0;
+    c.lineas.forEach(l => {
+      const tasa = tasaSegunEscalones(l.pctUtil, tiers);
+      l.pctComis = tasa;
+      l.valorComision = Math.round(l.totalCompra * tasa / 100);
+      totalComision += l.valorComision;
+    });
+    c.comision = Math.round(totalComision);
+    c.pctMargen = c.negociado > 0 ? (c.utilidad / c.negociado) * 100 : 0;
+  });
+
+  CROSSED = {
+    lineasComision, pendientes, sinPedido,
+    conflictos: Array.from(conflictos.values()),
+    discrepancias: ULTIMA_DISCREPANCIAS,
+    porComprador
+  };
+
+  renderDashboard();
+}
+
+/* =============================================================================
+   RENDER: dashboard
+   ============================================================================= */
+function renderDashboard() {
   const label = monthLabel(currentMonth);
   document.getElementById('viewTitle').textContent = 'Comisiones · ' + label;
   document.getElementById('viewTitle').style.textTransform = 'none';
 
-  if (DATA.length === 0) {
-    document.getElementById('statStrip').innerHTML = `<div class="stat" style="grid-column:1/-1;text-align:center;padding:24px;"><div class="lbl">Sin datos</div><div class="val" style="font-size:15px;">No hay materiales registrados en ${label}</div></div>`;
-    document.getElementById('buyers').innerHTML = '';
-    destroyCharts();
-    return;
-  }
+  const compradores = Object.values(CROSSED.porComprador).sort((a,b) => b.comision - a.comision);
+
+  // Ejecutivo LUTEC (sobre lineasComision del mes)
+  renderExec();
+
+  // Stats 4 KPIs
+  const totComp = compradores.reduce((s,d)=>s+d.comprado, 0);
+  const totNeg = compradores.reduce((s,d)=>s+d.negociado, 0);
+  const totUtil = compradores.reduce((s,d)=>s+d.utilidad, 0);
+  const totComis = compradores.reduce((s,d)=>s+d.comision, 0);
+  const totLineas = CROSSED.lineasComision.length;
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat"><div class="lbl">Total comprado</div><div class="val">${fmt(totComp)}</div></div>
     <div class="stat"><div class="lbl">Total presupuesto</div><div class="val">${fmt(totNeg)}</div></div>
-    <div class="stat"><div class="lbl">Utilidad generada · ${totLineas} materiales</div><div class="val">${fmt(totUtil)}</div></div>
+    <div class="stat"><div class="lbl">Utilidad · ${totLineas} materiales</div><div class="val">${fmt(totUtil)}</div></div>
     <div class="stat accent"><div class="lbl">Comisiones a pagar</div><div class="val">${fmt(totComis)}</div></div>`;
 
-  renderCharts();
+  // Gráficas por comprador
+  renderCharts(compradores);
 
-  document.getElementById('buyers').innerHTML = DATA.map((d,i)=>`
-    <div class="buyer ${isCustomTiers(d.nombre) ? 'custom' : ''}" onclick="showDetail(${i})">
-      <div class="buyer-head">
-        <div class="avatar">${initials(d.nombre)}</div>
-        <div style="flex:1;">
-          <div class="buyer-name">${d.nombre}</div>
-          <div class="buyer-role">Comprador · ${d.lineas.length} materiales</div>
+  // Tarjetas
+  if (compradores.length === 0) {
+    document.getElementById('buyers').innerHTML = `<div class="empty-msg" style="grid-column:1/-1;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:30px;">No hay datos para ${label}. ${Object.keys(COMPRAS).length === 0 ? 'Sube un Excel de compras para empezar.' : 'Prueba con otro mes o revisa la configuración de bodegas.'}</div>`;
+  } else {
+    document.getElementById('buyers').innerHTML = compradores.map(d => `
+      <div class="buyer ${isCustomTiers(d.nombre) ? 'custom' : ''}" onclick="showDetail('${d.nombre.replace(/'/g, "\\'")}')">
+        <div class="buyer-head">
+          <div class="avatar">${initials(d.nombre)}</div>
+          <div style="flex:1;">
+            <div class="buyer-name">${d.nombre}</div>
+            <div class="buyer-role">${d.lineas.length} materiales · margen ${pct(d.pctMargen)}</div>
+          </div>
+          ${isCustomTiers(d.nombre) ? '<span class="custom-tag">Personalizado</span>' : ''}
         </div>
-        ${isCustomTiers(d.nombre) ? '<span class="custom-tag">Personalizado</span>' : ''}
-      </div>
-      <div class="buyer-grid">
-        <div class="mini"><div class="l">Comprado</div><div class="v">${fmt(d.comprado)}</div></div>
-        <div class="mini"><div class="l">Utilidad</div><div class="v">${fmt(d.utilidad)}</div></div>
-        <div class="mini comis" style="grid-column: span 2;">
-          <div class="l">Comisión del mes · margen ${pct(d.pctMargen)}</div>
-          <div class="v">${fmt(d.comision)}</div>
+        <div class="buyer-grid">
+          <div class="mini"><div class="l">Comprado</div><div class="v">${fmt(d.comprado)}</div></div>
+          <div class="mini"><div class="l">Utilidad</div><div class="v">${fmt(d.utilidad)}</div></div>
+          <div class="mini comis" style="grid-column: span 2;">
+            <div class="l">Comisión del mes</div>
+            <div class="v">${fmt(d.comision)}</div>
+          </div>
         </div>
-      </div>
-      <div class="buyer-foot"><span>Ver detalle línea por línea</span><span class="go">Abrir →</span></div>
-    </div>`).join('');
+        <div class="buyer-foot"><span>Ver detalle línea por línea</span><span class="go">Abrir →</span></div>
+      </div>`).join('');
+  }
+
+  // Secciones extras
+  renderExtras();
 }
 
-// =====================================================================
-// GRÁFICAS
-// =====================================================================
-function destroyCharts() {
-  Object.values(charts).forEach(c => c && c.destroy());
-  charts = {};
+/* =============================================================================
+   RENDER: ejecutivo LUTEC
+   ============================================================================= */
+function switchExecView(v) {
+  execView = v;
+  document.querySelectorAll('.exec-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === v);
+  });
+  renderExec();
 }
 
-function renderCharts() {
-  destroyCharts();
-  if (!DATA.length) return;
+function renderExec() {
+  const compradores = Object.values(CROSSED.porComprador);
+  const comprado = compradores.reduce((s,d)=>s+d.comprado, 0);
+  const negociado = compradores.reduce((s,d)=>s+d.negociado, 0);
+  const utilidad = compradores.reduce((s,d)=>s+d.utilidad, 0);
+  const margen = negociado > 0 ? (utilidad/negociado*100) : 0;
 
-  const labels = DATA.map(d => d.nombre);
-  const short = s => s.length > 12 ? s.split(' ')[0] : s;
-  const shortLabels = labels.map(short);
+  document.getElementById('execSub').textContent = `${monthLabel(currentMonth)} · margen consolidado ${pct(margen)}`;
 
-  // 1. Barras: comprado vs presupuesto
+  const body = document.getElementById('execBody');
+
+  if (charts.execChart) { charts.execChart.destroy(); delete charts.execChart; }
+
+  if (execView === 'kpi') {
+    body.innerHTML = `
+      <div class="exec-kpi-grid">
+        <div class="exec-kpi">
+          <div class="lbl">Total comprado (Real)</div>
+          <div class="val">${fmt(comprado)}</div>
+          <div class="sub">Valor efectivo pagado</div>
+        </div>
+        <div class="exec-kpi">
+          <div class="lbl">Presupuesto (Bolsa)</div>
+          <div class="val">${fmt(negociado)}</div>
+          <div class="sub">Referencia contra la que se negoció</div>
+        </div>
+        <div class="exec-kpi">
+          <div class="lbl">Utilidad generada</div>
+          <div class="val">${fmt(utilidad)}</div>
+          <div class="sub">${pct(margen)} de margen sobre bolsa</div>
+        </div>
+      </div>`;
+  } else if (execView === 'bars') {
+    body.innerHTML = `<div class="exec-chart-wrap"><canvas id="chartExec"></canvas></div>`;
+    charts.execChart = new Chart(document.getElementById('chartExec'), {
+      type: 'bar',
+      data: {
+        labels: ['Presupuesto (Bolsa)', 'Comprado (Real)', 'Utilidad'],
+        datasets: [{
+          data: [negociado, comprado, utilidad],
+          backgroundColor: ['#4a7bc9', '#b8d726', '#2a9d5c'],
+          borderRadius: 6, borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ' ' + fmt(ctx.parsed.y) } }
+        },
+        scales: {
+          y: {
+            ticks: { color: 'rgba(255,255,255,0.6)', callback: v => '$' + (v/1e6).toFixed(0) + 'M', font: { size: 11 } },
+            grid: { color: 'rgba(255,255,255,0.08)' }
+          },
+          x: {
+            ticks: { color: 'rgba(255,255,255,0.85)', font: { size: 12, weight: '600' } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  } else if (execView === 'waterfall') {
+    // Waterfall simple: barra flotante de compra dentro del rango bolsa
+    body.innerHTML = `<div class="exec-chart-wrap"><canvas id="chartExec"></canvas></div>`;
+    charts.execChart = new Chart(document.getElementById('chartExec'), {
+      type: 'bar',
+      data: {
+        labels: ['Presupuesto', 'Compra real', 'Utilidad'],
+        datasets: [
+          {
+            label: 'Valor',
+            data: [
+              [0, negociado],
+              [0, comprado],
+              [comprado, comprado + utilidad]
+            ],
+            backgroundColor: ['#4a7bc9', '#b8d726', '#2a9d5c'],
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => {
+            const v = ctx.raw;
+            if (Array.isArray(v)) return ' ' + fmt(v[1] - v[0]);
+            return ' ' + fmt(v);
+          }}}
+        },
+        scales: {
+          y: {
+            ticks: { color: 'rgba(255,255,255,0.6)', callback: v => '$' + (v/1e6).toFixed(0) + 'M', font: { size: 11 } },
+            grid: { color: 'rgba(255,255,255,0.08)' }
+          },
+          x: {
+            ticks: { color: 'rgba(255,255,255,0.85)', font: { size: 12, weight: '600' } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+}
+
+/* =============================================================================
+   RENDER: gráficas por comprador
+   ============================================================================= */
+function destroyBuyerCharts() {
+  ['bars','donut','margin'].forEach(k => {
+    if (charts[k]) { charts[k].destroy(); delete charts[k]; }
+  });
+}
+
+function renderCharts(compradores) {
+  destroyBuyerCharts();
+  if (!compradores.length) return;
+
+  const short = s => (s||'').length > 12 ? (s||'').split(' ')[0] : (s||'');
+  const labels = compradores.map(d => short(d.nombre));
+
   charts.bars = new Chart(document.getElementById('chartBars'), {
     type: 'bar',
     data: {
-      labels: shortLabels,
+      labels,
       datasets: [
-        { label: 'Presupuesto (bolsa)', data: DATA.map(d=>d.negociado), backgroundColor: '#16283f', borderRadius: 4 },
-        { label: 'Comprado (real)', data: DATA.map(d=>d.comprado), backgroundColor: '#b8d726', borderRadius: 4 }
+        { label: 'Presupuesto', data: compradores.map(d=>d.negociado), backgroundColor: '#16283f', borderRadius: 4 },
+        { label: 'Comprado', data: compradores.map(d=>d.comprado), backgroundColor: '#b8d726', borderRadius: 4 }
       ]
     },
     options: {
@@ -527,14 +1025,13 @@ function renderCharts() {
     }
   });
 
-  // 2. Dona: participación en comisiones
-  const comisiones = DATA.map(d => d.comision);
+  const comisiones = compradores.map(d => d.comision);
   const totalComis = comisiones.reduce((a,b)=>a+b, 0);
   charts.donut = new Chart(document.getElementById('chartDonut'), {
     type: 'doughnut',
     data: {
-      labels: shortLabels,
-      datasets: [{ data: comisiones, backgroundColor: DATA.map((_,i)=>PALETTE[i % PALETTE.length]), borderWidth: 2, borderColor: '#fff' }]
+      labels,
+      datasets: [{ data: comisiones, backgroundColor: labels.map((_,i)=>PALETTE[i % PALETTE.length]), borderWidth: 2, borderColor: '#fff' }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '58%',
@@ -551,14 +1048,12 @@ function renderCharts() {
     }
   });
 
-  // 3. Barras horizontales: margen % por comprador
-  const margins = DATA.map(d => ({ nombre: short(d.nombre), pct: d.pctMargen })).sort((a,b) => b.pct - a.pct);
+  const margins = compradores.map(d => ({ nombre: short(d.nombre), pct: d.pctMargen })).sort((a,b) => b.pct - a.pct);
   charts.margin = new Chart(document.getElementById('chartMargin'), {
     type: 'bar',
     data: {
       labels: margins.map(m=>m.nombre),
       datasets: [{
-        label: '% Utilidad promedio',
         data: margins.map(m=>m.pct),
         backgroundColor: margins.map(m => m.pct >= 20 ? '#2a9d5c' : m.pct >= 10 ? '#b8d726' : m.pct >= 0 ? '#d99a2b' : '#c94a4a'),
         borderRadius: 4
@@ -568,28 +1063,178 @@ function renderCharts() {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { callback: v => v + '%', font: { size: 10 } } },
+        x: { ticks: { callback: v => v.toFixed(1) + '%', font: { size: 10 } } },
         y: { ticks: { font: { size: 11 } } }
       }
     }
   });
 }
 
-// =====================================================================
-// DETALLE POR COMPRADOR
-// =====================================================================
-function showDetail(i) {
-  currentBuyerIdx = i;
-  const d = DATA[i];
+/* =============================================================================
+   RENDER: secciones extras (acordeones)
+   ============================================================================= */
+function renderExtras() {
+  const cont = document.getElementById('extras');
+  const P = CROSSED.pendientes;
+  const S = CROSSED.sinPedido;
+  const C = CROSSED.conflictos;
+  const D = CROSSED.discrepancias;
+
+  const totalBolsaPendiente = P.reduce((s,p) => s + (p.bolsa * p.cantFaltante), 0);
+  const totalValorSinPedido = S.reduce((s,l) => s + (l.valorUnitario * l.cant), 0);
+
+  cont.innerHTML = `
+    <div class="accordion" id="accPend">
+      <div class="accordion-head" onclick="toggleAcc('accPend')">
+        <div class="title"><span>⏳ Pendientes por comprar</span><span class="count warn">${P.length}</span></div>
+        <span class="caret">▼</span>
+      </div>
+      <div class="accordion-body" id="accBodyPend"></div>
+    </div>
+
+    <div class="accordion" id="accSin">
+      <div class="accordion-head" onclick="toggleAcc('accSin')">
+        <div class="title"><span>⚠️ Compras sin pedido en Monday</span><span class="count err">${S.length}</span></div>
+        <span class="caret">▼</span>
+      </div>
+      <div class="accordion-body" id="accBodySin"></div>
+    </div>
+
+    ${C.length ? `
+    <div class="accordion" id="accConf">
+      <div class="accordion-head" onclick="toggleAcc('accConf')">
+        <div class="title"><span>🔀 Conflictos OC+Código en Monday</span><span class="count err">${C.length}</span></div>
+        <span class="caret">▼</span>
+      </div>
+      <div class="accordion-body" id="accBodyConf"></div>
+    </div>` : ''}
+
+    ${D.length ? `
+    <div class="accordion" id="accDisc">
+      <div class="accordion-head" onclick="toggleAcc('accDisc')">
+        <div class="title"><span>💰 Discrepancias de precio detectadas</span><span class="count warn">${D.length}</span></div>
+        <span class="caret">▼</span>
+      </div>
+      <div class="accordion-body" id="accBodyDisc"></div>
+    </div>` : ''}
+  `;
+
+  // Pendientes
+  const bp = document.getElementById('accBodyPend');
+  if (P.length === 0) {
+    bp.innerHTML = `<div class="empty-msg">Todo lo pedido en Monday se ha comprado en este periodo.</div>`;
+  } else {
+    bp.innerHTML = `
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
+        Materiales pedidos en Monday que aún no se han comprado (o se han comprado parcialmente). Valor pendiente estimado: <b>${fmt(totalBolsaPendiente)}</b>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th>
+          <th>Cant. pedida</th><th>Comprada</th><th>Faltante</th><th>Bolsa</th><th class="tl">Logístico</th>
+        </tr></thead>
+        <tbody>${P.map(p => `<tr>
+          <td class="tl">${p.oc}</td>
+          <td class="tl">${p.codigo}</td>
+          <td class="tl desc">${p.descripcion || '—'}</td>
+          <td>${p.cantPedida}</td>
+          <td>${p.cantComprada}</td>
+          <td><b>${p.cantFaltante}</b></td>
+          <td>${fmt(p.bolsa)}</td>
+          <td class="tl">${p.logistico || '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  // Sin pedido
+  const bs = document.getElementById('accBodySin');
+  if (S.length === 0) {
+    bs.innerHTML = `<div class="empty-msg">Todas las compras del Excel están respaldadas por un pedido en Monday.</div>`;
+  } else {
+    bs.innerHTML = `
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
+        Líneas del Excel que no encontraron un pedido en Monday (revisar si faltan por crear en Monday). Valor total: <b>${fmt(totalValorSinPedido)}</b>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th class="tl">Fecha</th><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th>
+          <th class="tl">Bodega</th><th class="tl">Comprador</th><th>Cant</th><th>V.Unit</th><th>Total</th>
+        </tr></thead>
+        <tbody>${S.map(l => `<tr>
+          <td class="tl">${fmtFecha(l.fecha)}</td>
+          <td class="tl">${normOC(l.oc) || '—'}</td>
+          <td class="tl">${normCod(l.codigo) || '—'}</td>
+          <td class="tl desc">${l.descripcion || '—'}</td>
+          <td class="tl">${l.bodega || '—'}</td>
+          <td class="tl">${l.comprador}</td>
+          <td>${l.cant}</td>
+          <td>${fmt(l.valorUnitario)}</td>
+          <td>${fmt(l.valorUnitario * l.cant)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  // Conflictos
+  if (C.length) {
+    document.getElementById('accBodyConf').innerHTML = `
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
+        Estos códigos aparecen varias veces en Monday con la misma OC. Se está usando el primer match, revisa manualmente cuál es el correcto.
+      </div>
+      ${C.map(c => `
+        <div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:8px;">
+          <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">OC ${c.oc} · ${c.codigo}</div>
+          <div style="font-size:12px;color:var(--ink-soft);margin-bottom:8px;">En Excel: ${c.descExcel || '—'}</div>
+          <div style="font-size:12px;">
+            <b>${c.items.length} coincidencias en Monday:</b>
+            <ul style="margin:6px 0 0 20px;">
+              ${c.items.map(i => `<li>${i.descripcion} — bolsa ${fmt(i.bolsa)} · cant ${i.cantidad} · logístico: ${i.logistico || '—'}</li>`).join('')}
+            </ul>
+          </div>
+        </div>`).join('')}
+    `;
+  }
+
+  // Discrepancias
+  if (D.length) {
+    document.getElementById('accBodyDisc').innerHTML = `
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
+        Al mezclar el último Excel se detectaron líneas con la misma fecha + OC + código pero <b>diferente valor unitario</b>. Se conservó el valor más reciente.
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="tl">Fecha</th><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>V.Unit anterior</th><th>V.Unit nuevo</th><th>Diferencia</th></tr></thead>
+        <tbody>${D.map(d => `<tr>
+          <td class="tl">${fmtFecha(d.fecha)}</td>
+          <td class="tl">${d.oc}</td>
+          <td class="tl">${d.codigo}</td>
+          <td class="tl desc">${d.descripcion || '—'}</td>
+          <td>${fmt(d.valorAnterior)}</td>
+          <td><b>${fmt(d.valorNuevo)}</b></td>
+          <td style="color:${d.valorNuevo > d.valorAnterior ? 'var(--red)' : 'var(--green)'};">${d.valorNuevo > d.valorAnterior ? '+' : ''}${fmt(d.valorNuevo - d.valorAnterior)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+}
+
+function toggleAcc(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+/* =============================================================================
+   VISTA DETALLE DE COMPRADOR
+   ============================================================================= */
+function showDetail(nombre) {
+  const d = CROSSED.porComprador[nombre];
+  if (!d) { showDashboard(); return; }
+  currentBuyerName = nombre;
 
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('detail').classList.add('active');
   document.getElementById('crumb').style.display = 'block';
-  document.getElementById('viewTitle').textContent = d.nombre + ' · ' + monthLabel(currentMonth);
+  document.getElementById('viewTitle').textContent = nombre + ' · ' + monthLabel(currentMonth);
   document.getElementById('viewTitle').style.textTransform = 'none';
   document.getElementById('viewSub').textContent = `${d.lineas.length} materiales gestionados · margen ${pct(d.pctMargen)}`;
 
-  renderTiers(d.nombre);
+  renderTiersEditor(nombre);
 
   document.getElementById('detailStats').innerHTML = `
     <div class="stat"><div class="lbl">Comprado</div><div class="val">${fmt(d.comprado)}</div></div>
@@ -597,37 +1242,58 @@ function showDetail(i) {
     <div class="stat"><div class="lbl">Utilidad</div><div class="val">${fmt(d.utilidad)}</div></div>
     <div class="stat accent"><div class="lbl">Comisión</div><div class="val">${fmt(d.comision)}</div></div>`;
 
-  renderDetailTable(d);
-  window.scrollTo(0, 0);
-}
-
-function fmtFecha(f) {
-  if (!f) return '—';
-  const [y,m,d] = f.split('-');
-  return `${d}/${m}/${y.substring(2)}`;
-}
-
-function renderDetailTable(d) {
-  // ordenar por fecha ascendente
-  const lineasOrdenadas = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  const ord = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
   document.getElementById('detailTable').innerHTML = `
     <thead><tr>
-      <th>Fecha</th><th>Material</th><th class="hide-sm">Proveedor</th><th>Cant</th>
-      <th>Bolsa</th><th>Compra</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
+      <th class="tl">Fecha</th><th class="tl">Bodega</th><th class="tl">OC</th><th class="tl">Código</th>
+      <th class="tl">Material</th><th class="tl hide-sm">Proveedor</th>
+      <th>Ped</th><th>Comp</th><th>Bolsa</th><th>V.Unit</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
     </tr></thead>
-    <tbody>${lineasOrdenadas.map(l=>`<tr>
-      <td>${fmtFecha(l.fecha)}</td>
-      <td class="desc">${l.desc}</td>
-      <td class="terc hide-sm">${l.tercero||'—'}</td>
-      <td>${l.cant}</td>
+    <tbody>${ord.map(l => `<tr>
+      <td class="tl">${fmtFecha(l.fecha)}</td>
+      <td class="tl">${l.bodega || '—'}</td>
+      <td class="tl">${l.oc}</td>
+      <td class="tl">${l.codigo}</td>
+      <td class="tl desc">${l.descripcion || '—'}</td>
+      <td class="tl terc hide-sm">${l.tercero || '—'}</td>
+      <td>${l.cantMonday}</td>
+      <td>${l.cantExcel}</td>
       <td>${fmt(l.bolsa)}</td>
-      <td>${fmt(l.compra)}</td>
+      <td>${fmt(l.vunit)}</td>
       <td>${fmt(l.utilTotal)}</td>
       <td>${pct(l.pctUtil)}</td>
       <td>${commissionBadge(l.pctComis)}</td>
-      <td class="comis-val">${l.valorComision>0 ? fmt(l.valorComision) : '—'}</td>
+      <td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="9">Total comisión · ${d.nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
+    <tfoot><tr><td colspan="13">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
+
+  // Faltantes de este comprador (por bodega)
+  const bodegasDel = new Set(d.lineas.map(l => l.bodega).filter(Boolean));
+  const faltantesDel = CROSSED.pendientes.filter(p => {
+    // asignamos el faltante al comprador cuya bodega coincida (aproximado por logístico si no hay bodega)
+    return p.logistico === nombre || Array.from(bodegasDel).some(b => BODEGAS_MAP[b] === nombre && (!p.logistico || p.logistico === nombre));
+  });
+
+  const fdEl = document.getElementById('detailFaltantes');
+  if (faltantesDel.length === 0) {
+    fdEl.innerHTML = '';
+  } else {
+    fdEl.innerHTML = `
+      <div class="sec-title" style="padding-left:0;padding-right:0;">Pendientes atribuibles a ${nombre}</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>Pedida</th><th>Faltante</th><th>Bolsa</th></tr></thead>
+        <tbody>${faltantesDel.map(p => `<tr>
+          <td class="tl">${p.oc}</td>
+          <td class="tl">${p.codigo}</td>
+          <td class="tl desc">${p.descripcion || '—'}</td>
+          <td>${p.cantPedida}</td>
+          <td><b>${p.cantFaltante}</b></td>
+          <td>${fmt(p.bolsa)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  window.scrollTo(0, 0);
 }
 
 function commissionBadge(pctComis) {
@@ -637,74 +1303,8 @@ function commissionBadge(pctComis) {
   return `<span class="badge b-high">${pctComis}%</span>`;
 }
 
-// =====================================================================
-// EDITOR DE ESCALONES POR COMPRADOR
-// =====================================================================
-function renderTiers(buyerName) {
-  const tiers = getTiersFor(buyerName) || TIERS_DEFAULT;
-  const isCustom = isCustomTiers(buyerName);
-
-  document.getElementById('tierBuyerName').textContent = buyerName;
-  const tag = document.getElementById('tierMode');
-  tag.textContent = isCustom ? 'Regla personalizada' : 'Regla estándar del equipo';
-  tag.className = 'rules-tag ' + (isCustom ? 'custom' : '');
-
-  const grid = document.getElementById('tiersGrid');
-  let html = '';
-  let anterior = 0;
-  tiers.forEach((t, i) => {
-    const rango = t.hasta === null ? `≥ ${anterior}%` : `${anterior}% – ${t.hasta}%`;
-    html += `
-      <div class="tier-box">
-        <label>Utilidad ${rango}</label>
-        <input type="number" step="0.01" min="0" data-tier="${i}" data-field="tasa" value="${t.tasa}">
-        <div style="font-size:10px;color:var(--ink-soft);margin-top:4px;">% comisión</div>
-      </div>`;
-    if (t.hasta !== null) {
-      html += `
-        <div class="tier-box">
-          <label>Umbral siguiente</label>
-          <input type="number" step="0.1" min="0" data-tier="${i}" data-field="hasta" value="${t.hasta}">
-          <div style="font-size:10px;color:var(--ink-soft);margin-top:4px;">% utilidad</div>
-        </div>`;
-    }
-    anterior = t.hasta === null ? anterior : t.hasta;
-  });
-  grid.innerHTML = html;
-}
-
-function saveTiers() {
-  if (currentBuyerIdx === null) return;
-  const buyerName = DATA[currentBuyerIdx].nombre;
-  const tiers = JSON.parse(JSON.stringify(TIERS_DEFAULT)); // clona la estructura
-
-  document.querySelectorAll('#tiersGrid input').forEach(inp => {
-    const i = parseInt(inp.dataset.tier, 10);
-    const field = inp.dataset.field;
-    const val = parseFloat(inp.value);
-    if (!isNaN(val)) tiers[i][field] = val;
-  });
-
-  setTiersFor(buyerName, tiers);
-  recalcularData();
-  showDetail(currentBuyerIdx); // rerender con los nuevos valores
-  toast('Escalones actualizados para ' + buyerName, 'success');
-}
-
-function resetTiers() {
-  if (currentBuyerIdx === null) return;
-  const buyerName = DATA[currentBuyerIdx].nombre;
-  removeTiersFor(buyerName);
-  recalcularData();
-  showDetail(currentBuyerIdx);
-  toast('Volvió a la regla estándar', 'success');
-}
-
-// =====================================================================
-// NAVEGACIÓN
-// =====================================================================
 function showDashboard() {
-  currentBuyerIdx = null;
+  currentBuyerName = null;
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('detail').classList.remove('active');
   document.getElementById('crumb').style.display = 'none';
@@ -712,39 +1312,662 @@ function showDashboard() {
   window.scrollTo(0, 0);
 }
 
-// =====================================================================
-// EXPORTAR A EXCEL (formato tipo original)
-// =====================================================================
-function exportExcel() {
-  if (!DATA.length) { toast('No hay datos que exportar en este mes', 'error'); return; }
+/* =============================================================================
+   EDITOR DE ESCALONES (tabla limpia)
+   ============================================================================= */
+function renderTiersEditor(nombre) {
+  const tiers = getTiersFor(nombre) || TIERS_DEFAULT;
+  const isCustom = isCustomTiers(nombre);
+
+  document.getElementById('tiersEditor').innerHTML = `
+    <div class="rules-head">
+      <h3>Escalones de comisión · ${nombre}</h3>
+      <span class="rules-tag ${isCustom ? 'custom' : ''}">${isCustom ? 'Regla personalizada' : 'Regla estándar del equipo'}</span>
+    </div>
+    <table class="tiers-table" id="tiersTable">
+      <thead>
+        <tr>
+          <th>Desde</th>
+          <th>Hasta</th>
+          <th>Comisión</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tiersTbody">${renderTierRows(tiers)}</tbody>
+    </table>
+    <button class="tier-add-btn" onclick="addTierRow()">+ Agregar escalón</button>
+    <div class="tier-actions">
+      <button class="btn accent" onclick="saveTiers()">Guardar cambios</button>
+      <button class="btn" onclick="resetTiers()">Volver a la regla estándar</button>
+    </div>
+  `;
+}
+
+function renderTierRows(tiers) {
+  return tiers.map((t, i) => {
+    const desde = i === 0 ? 0 : tiers[i-1].hasta;
+    const isLast = (i === tiers.length - 1);
+    const hastaVal = t.hasta === null ? '' : t.hasta;
+    return `
+      <tr data-idx="${i}">
+        <td><input type="number" class="tier-input" value="${desde}" disabled><span class="tier-suffix">%</span></td>
+        <td>${isLast
+          ? `<span style="color:var(--ink-soft);font-size:12px;">en adelante</span>`
+          : `<input type="number" class="tier-input tier-hasta" step="0.1" min="0" value="${hastaVal}"><span class="tier-suffix">%</span>`}</td>
+        <td><input type="number" class="tier-input tier-tasa" step="0.01" min="0" value="${t.tasa}"><span class="tier-suffix">%</span></td>
+        <td>${tiers.length > 1 ? `<button class="tier-del" onclick="removeTierRow(${i})" title="Eliminar escalón">×</button>` : ''}</td>
+      </tr>`;
+  }).join('');
+}
+
+function readTiersFromEditor() {
+  const rows = document.querySelectorAll('#tiersTbody tr');
+  const tiers = [];
+  rows.forEach((tr, i) => {
+    const isLast = (i === rows.length - 1);
+    const hastaInput = tr.querySelector('.tier-hasta');
+    const tasaInput = tr.querySelector('.tier-tasa');
+    const hasta = isLast ? null : parseFloat(hastaInput.value);
+    const tasa = parseFloat(tasaInput.value);
+    tiers.push({ hasta: isNaN(hasta) ? null : hasta, tasa: isNaN(tasa) ? 0 : tasa });
+  });
+  return tiers;
+}
+
+function addTierRow() {
+  const tiers = readTiersFromEditor();
+  // añade un nuevo escalón antes del último (que es el "sin tope")
+  const last = tiers[tiers.length-1];
+  const prevHasta = tiers.length >= 2 ? tiers[tiers.length-2].hasta : 10;
+  tiers[tiers.length-1] = { hasta: (prevHasta || 0) + 10, tasa: last.tasa };
+  tiers.push({ hasta: null, tasa: last.tasa });
+  document.getElementById('tiersTbody').innerHTML = renderTierRows(tiers);
+}
+
+function removeTierRow(idx) {
+  const tiers = readTiersFromEditor();
+  tiers.splice(idx, 1);
+  // aseguramos que el último quede sin tope
+  if (tiers.length && tiers[tiers.length-1].hasta !== null) {
+    tiers[tiers.length-1].hasta = null;
+  }
+  document.getElementById('tiersTbody').innerHTML = renderTierRows(tiers);
+}
+
+function saveTiers() {
+  if (!currentBuyerName) return;
+  const tiers = readTiersFromEditor();
+  // validación básica: hastas ascendentes
+  for (let i = 0; i < tiers.length - 1; i++) {
+    const desde = i === 0 ? 0 : tiers[i-1].hasta;
+    if (tiers[i].hasta === null || tiers[i].hasta <= desde) {
+      toast(`Escalón ${i+1}: el "hasta" debe ser mayor al anterior`, 'error');
+      return;
+    }
+  }
+  TIERS_MAP[currentBuyerName] = tiers;
+  store.setTiers(TIERS_MAP);
+  procesarTodo();
+  showDetail(currentBuyerName);
+  toast('Escalones actualizados', 'success');
+}
+
+function resetTiers() {
+  if (!currentBuyerName) return;
+  delete TIERS_MAP[currentBuyerName];
+  store.setTiers(TIERS_MAP);
+  procesarTodo();
+  showDetail(currentBuyerName);
+  toast('Volvió a la regla estándar', 'success');
+}
+
+/* =============================================================================
+   MODAL (config / upload / backup)
+   ============================================================================= */
+let currentModal = null;
+
+function openModal(kind) {
+  currentModal = kind;
+  const bd = document.getElementById('modalBackdrop');
+  const mc = document.getElementById('modalContent');
+  if (kind === 'config') mc.innerHTML = renderConfigModal();
+  else if (kind === 'upload') mc.innerHTML = renderUploadModal();
+  else if (kind === 'backup') mc.innerHTML = renderBackupModal();
+  bd.classList.add('show');
+  // handlers post-render
+  if (kind === 'upload') setupUpload();
+  if (kind === 'backup') setupBackup();
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('show');
+  currentModal = null;
+}
+
+/* --------- Modal: Configuración --------- */
+function renderConfigModal() {
+  return `
+    <div class="modal-head">
+      <h2>Configuración</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="active" onclick="switchConfigTab('bodegas', this)">Bodegas → Comprador</button>
+      <button onclick="switchConfigTab('tiers', this)">Escalones por comprador</button>
+    </div>
+    <div class="modal-tab-content active" id="tabBodegas">${renderBodegasTab()}</div>
+    <div class="modal-tab-content" id="tabTiers">${renderTiersTab()}</div>
+  `;
+}
+
+function switchConfigTab(id, btn) {
+  document.querySelectorAll('.modal-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1)).classList.add('active');
+}
+
+function getAllCompradores() {
+  // Compradores conocidos = logísticos de Monday + los que ya están asignados en el map + los que tienen tiers
+  const set = new Set();
+  MATERIALES_MONDAY.forEach(m => { if (m.logistico) set.add(m.logistico); });
+  Object.values(BODEGAS_MAP).forEach(c => { if (c) set.add(c); });
+  Object.keys(TIERS_MAP).forEach(n => set.add(n));
+  return Array.from(set).sort();
+}
+
+function getAllBodegas() {
+  // Bodegas conocidas = las que aparecen en el Excel + las que ya están en el map
+  const set = new Set();
+  Object.values(COMPRAS).forEach(c => { if (c.bodega) set.add(c.bodega); });
+  Object.keys(BODEGAS_MAP).forEach(b => set.add(b));
+  return Array.from(set).sort();
+}
+
+function renderBodegasTab() {
+  const bodegas = getAllBodegas();
+  const compradores = getAllCompradores();
+  const conteos = {};
+  Object.values(COMPRAS).forEach(c => { if (c.bodega) conteos[c.bodega] = (conteos[c.bodega]||0) + 1; });
+
+  if (bodegas.length === 0) {
+    return `<div class="empty-msg">Aún no hay bodegas registradas. Sube un Excel de compras para verlas aquí.</div>`;
+  }
+
+  const optionsHtml = ['<option value="">— Sin asignar —</option>', ...compradores.map(c => `<option value="${c}">${c}</option>`)].join('');
+
+  return `
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">
+      Asigna cada bodega a un comprador. Al cruzar el Excel con Monday, las líneas se atribuyen al comprador de la bodega correspondiente.
+    </div>
+    <div class="bodegas-table">
+      <table>
+        <thead><tr><th class="tl">Bodega</th><th class="tl">Comprador asignado</th><th class="bodega-count">Líneas cargadas</th></tr></thead>
+        <tbody>${bodegas.map(b => `<tr class="bodega-row">
+          <td class="tl" style="font-weight:600;color:var(--navy);">${b}</td>
+          <td class="tl">
+            <select onchange="setBodega('${b.replace(/'/g,"\\'")}', this.value)">
+              ${optionsHtml.replace(`value="${BODEGAS_MAP[b] || ''}"`, `value="${BODEGAS_MAP[b] || ''}" selected`)}
+            </select>
+          </td>
+          <td><span class="bodega-count">${conteos[b] || 0}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:12px;color:var(--ink-soft);">${bodegas.length} bodegas · ${compradores.length} compradores disponibles</div>
+      <div>
+        <button class="btn" onclick="addComprador()">+ Nuevo comprador</button>
+      </div>
+    </div>
+  `;
+}
+
+function setBodega(bodega, comprador) {
+  if (comprador) BODEGAS_MAP[bodega] = comprador;
+  else delete BODEGAS_MAP[bodega];
+  store.setBodegas(BODEGAS_MAP);
+  procesarTodo();
+  // no rerenderizamos el modal para no perder scroll; los cambios se reflejan al guardar/cerrar
+}
+
+function addComprador() {
+  const nombre = prompt('Nombre del nuevo comprador:');
+  if (!nombre) return;
+  const n = nombre.trim();
+  if (!n) return;
+  // Lo agregamos garantizando que aparezca en el listado (creamos entrada vacía en tiers)
+  if (!TIERS_MAP[n]) {
+    // no forzamos tiers custom; solo lo "registramos" con una asignación temporal
+    // Truco: lo agregamos como opción al re-renderizar
+  }
+  // rerender: para que aparezca en el dropdown, lo metemos en una lista efímera
+  // (más simple: lo asignamos como comprador de una bodega si el usuario luego lo hace)
+  // Aquí simplemente guardamos un tier default para "registrarlo"
+  TIERS_MAP[n] = JSON.parse(JSON.stringify(TIERS_DEFAULT));
+  store.setTiers(TIERS_MAP);
+  document.getElementById('tabBodegas').innerHTML = renderBodegasTab();
+  document.getElementById('tabTiers').innerHTML = renderTiersTab();
+  toast(`Comprador "${n}" registrado. Asígnale bodegas.`, 'success');
+}
+
+function renderTiersTab() {
+  const compradores = getAllCompradores();
+  if (compradores.length === 0) {
+    return `<div class="empty-msg">No hay compradores registrados aún.</div>`;
+  }
+  return `
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">
+      Cada comprador puede tener sus propios escalones de comisión. También puedes editarlos desde la vista de detalle de cada comprador.
+    </div>
+    ${compradores.map(nombre => {
+      const isCustom = isCustomTiers(nombre);
+      const tiers = getTiersFor(nombre) || TIERS_DEFAULT;
+      return `
+        <div style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;color:var(--navy);">${nombre}</div>
+            <span class="rules-tag ${isCustom ? 'custom' : ''}">${isCustom ? 'Personalizado' : 'Estándar'}</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-soft);">
+            ${tiers.map((t,i) => {
+              const desde = i === 0 ? 0 : tiers[i-1].hasta;
+              const rango = t.hasta === null ? `≥ ${desde}%` : `${desde}% – ${t.hasta}%`;
+              return `${rango}: <b>${t.tasa}%</b>`;
+            }).join(' · ')}
+          </div>
+        </div>`;
+    }).join('')}
+  `;
+}
+
+/* --------- Modal: Subir Excel --------- */
+function renderUploadModal() {
+  const archivos = ARCHIVOS.slice().reverse();
+  return `
+    <div class="modal-head">
+      <h2>Subir Excel de compras</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="upload-drop" id="uploadDrop">
+      <div class="ic">📥</div>
+      <p><b>Haz clic aquí</b> o arrastra el archivo .xlsx</p>
+      <p style="font-size:11px;margin-top:6px;">Se detecta automáticamente la Hoja1 o Hoja2 con los datos de compras</p>
+      <input type="file" id="uploadInput" accept=".xlsx,.xls">
+    </div>
+    <div id="uploadResult"></div>
+    ${archivos.length ? `
+      <div style="margin-top:20px;">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);font-weight:700;margin-bottom:8px;">Archivos cargados</div>
+        <div class="upload-list">
+          ${archivos.map(a => `<div class="file-item">
+            <div>
+              <div class="file-name">${a.nombre}</div>
+              <div class="file-meta">${a.lineas} líneas · ${monthLabel(a.mes) || 'varias fechas'} · subido ${new Date(a.fecha).toLocaleString('es-CO')}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+    ${_storageBarHtml()}
+  `;
+}
+
+function _storageBarHtml() {
+  const used = store.usage();
+  const max = 5 * 1024 * 1024; // 5MB estimado
+  const pctUsed = Math.min(100, (used / max) * 100);
+  const cls = pctUsed > 80 ? 'err' : pctUsed > 60 ? 'warn' : '';
+  return `
+    <div class="storage-bar">
+      <div class="lbl">Uso del almacenamiento local</div>
+      <div class="track"><div class="fill ${cls}" style="width:${pctUsed}%;"></div></div>
+      <div class="info">${(used/1024).toFixed(0)} KB de ~${(max/1024/1024).toFixed(0)} MB · ${Object.keys(COMPRAS).length} líneas totales</div>
+    </div>`;
+}
+
+function setupUpload() {
+  const drop = document.getElementById('uploadDrop');
+  const input = document.getElementById('uploadInput');
+  drop.onclick = () => input.click();
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('dragover'); };
+  drop.ondragleave = () => drop.classList.remove('dragover');
+  drop.ondrop = (e) => {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) procesarArchivoExcel(f);
+  };
+  input.onchange = (e) => {
+    const f = e.target.files[0];
+    if (f) procesarArchivoExcel(f);
+  };
+}
+
+async function procesarArchivoExcel(file) {
+  const rEl = document.getElementById('uploadResult');
+  rEl.innerHTML = `<div class="upload-result">Procesando <b>${file.name}</b>…</div>`;
+
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    // Buscar hoja con las columnas esperadas
+    let hoja = null;
+    let filas = null;
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const arr = XLSX.utils.sheet_to_json(ws, { defval: null });
+      if (!arr.length) continue;
+      const cols = Object.keys(arr[0]);
+      // Detectamos si tiene las columnas críticas
+      const tieneCod = cols.includes('CodigoInventario') || cols.includes('Codigo Inventario') || cols.includes('codigo_inventario');
+      const tieneDoc = cols.includes('Documento_Origen') || cols.includes('Documento Origen') || cols.includes('Numero_Documento');
+      const tieneFecha = cols.includes('Fecha');
+      const tieneVunit = cols.includes('Valor_Unitario') || cols.includes('Valor Unitario');
+      if (tieneCod && (tieneDoc || tieneFecha) && tieneVunit) {
+        hoja = sn; filas = arr; break;
+      }
+    }
+    if (!filas) {
+      rEl.innerHTML = `<div class="upload-result" style="border-left:3px solid var(--red);"><b>Error:</b> no se encontró una hoja con las columnas esperadas (CodigoInventario, Documento_Origen, Fecha, Valor_Unitario).</div>`;
+      return;
+    }
+
+    // Normalizar cada fila y calcular hash
+    const nuevas = {};
+    const discrepancias = [];
+    let dupExactos = 0;
+    let mesesTocados = new Set();
+    const comprasActuales = store.getCompras();
+
+    filas.forEach(row => {
+      const oc = row['Documento_Origen'] || row['Documento Origen'] || row['Numero_Documento'] || '';
+      const codigo = row['CodigoInventario'] || row['Codigo Inventario'] || row['codigo_inventario'] || '';
+      let fecha = row['Fecha'];
+      if (fecha instanceof Date) {
+        fecha = fecha.toISOString().substring(0, 10);
+      } else if (typeof fecha === 'string') {
+        fecha = fecha.substring(0, 10);
+      } else if (typeof fecha === 'number') {
+        // fecha serial de Excel
+        const d = XLSX.SSF.parse_date_code(fecha);
+        fecha = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+      }
+
+      const linea = {
+        fecha: fecha || '',
+        oc: normOC(oc),
+        codigo: normCod(codigo),
+        descripcion: row['Descripcion'] || row['Descripción'] || '',
+        tercero: row['Tercero'] || '',
+        bodega: row['Bodega'] || '',
+        cant: parseFloat(row['Cant'] || 0) || 0,
+        unidad: row['UnidadDeMedida'] || row['Unidad'] || 'UND',
+        valorUnitario: parseFloat(row['Valor_Unitario'] || row['Valor Unitario'] || 0) || 0,
+        subtotal: parseFloat(row['Subtotal'] || 0) || 0,
+        iva: row['Iva'] || '',
+        notaDetalle: row['Nota_Detalle'] || row['Nota Detalle'] || '',
+        centroCosto: row['Centro_de_Costos'] || row['Centro de Costos'] || '',
+        numeroDoc: row['Numero_Documento'] || '',
+        nota: row['Nota'] || '',
+        sourceFile: file.name,
+        uploadedAt: new Date().toISOString()
+      };
+
+      if (!linea.fecha || (!linea.oc && !linea.codigo)) return; // línea inválida
+      if (linea.fecha) mesesTocados.add(monthKey(linea.fecha));
+
+      const h = hashLinea(linea);
+
+      // Detección de duplicado exacto
+      if (comprasActuales[h]) {
+        dupExactos++;
+        return; // ya existe idéntica
+      }
+
+      // Detección de discrepancia: misma fecha+OC+código+bodega+cant, pero valor unitario distinto
+      // Buscamos en comprasActuales alguna que difiera solo en valorUnitario
+      let discrepancia = null;
+      for (const [ek, ev] of Object.entries(comprasActuales)) {
+        if (ev.fecha === linea.fecha && ev.oc === linea.oc && ev.codigo === linea.codigo
+            && ev.bodega === linea.bodega && ev.cant === linea.cant
+            && ev.valorUnitario !== linea.valorUnitario) {
+          discrepancia = { anteriorHash: ek, anterior: ev };
+          break;
+        }
+      }
+      if (discrepancia) {
+        discrepancias.push({
+          fecha: linea.fecha, oc: linea.oc, codigo: linea.codigo,
+          descripcion: linea.descripcion,
+          valorAnterior: discrepancia.anterior.valorUnitario,
+          valorNuevo: linea.valorUnitario
+        });
+        // Reemplazamos: quitamos la anterior y ponemos la nueva
+        delete comprasActuales[discrepancia.anteriorHash];
+      }
+
+      nuevas[h] = linea;
+    });
+
+    // Merge en storage
+    const merged = { ...comprasActuales, ...nuevas };
+    store.setCompras(merged);
+    COMPRAS = merged;
+    ULTIMA_DISCREPANCIAS = discrepancias;
+
+    // Registrar el archivo en el historial
+    ARCHIVOS.push({
+      nombre: file.name,
+      fecha: new Date().toISOString(),
+      lineas: Object.keys(nuevas).length,
+      duplicados: dupExactos,
+      discrepancias: discrepancias.length,
+      mes: mesesTocados.size === 1 ? Array.from(mesesTocados)[0] : ''
+    });
+    store.setArchivos(ARCHIVOS);
+
+    // Detectar bodegas nuevas (sin asignar)
+    const bodegasNuevas = new Set();
+    Object.values(nuevas).forEach(l => {
+      if (l.bodega && !BODEGAS_MAP[l.bodega]) bodegasNuevas.add(l.bodega);
+    });
+
+    rEl.innerHTML = `
+      <div class="upload-result" style="border-left:3px solid var(--green);">
+        <div class="r-line"><span>Líneas nuevas cargadas:</span> <b>${Object.keys(nuevas).length}</b></div>
+        <div class="r-line"><span>Duplicados exactos ignorados:</span> <b>${dupExactos}</b></div>
+        ${discrepancias.length ? `<div class="r-line" style="color:var(--amber);"><span>⚠ Discrepancias de precio detectadas:</span> <b>${discrepancias.length}</b></div>` : ''}
+        ${bodegasNuevas.size ? `<div class="r-line" style="color:var(--red);"><span>⚠ Bodegas nuevas sin asignar:</span> <b>${bodegasNuevas.size}</b> (${Array.from(bodegasNuevas).slice(0,5).join(', ')}${bodegasNuevas.size>5?'…':''})</div>` : ''}
+        <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">Hoja procesada: <b>${hoja}</b> · Meses tocados: <b>${Array.from(mesesTocados).sort().map(monthLabel).join(', ') || '—'}</b></div>
+      </div>`;
+
+    detectAvailableMonths();
+    procesarTodo();
+    toast(`${Object.keys(nuevas).length} líneas cargadas`, 'success');
+  } catch(e) {
+    console.error(e);
+    rEl.innerHTML = `<div class="upload-result" style="border-left:3px solid var(--red);"><b>Error al procesar:</b> ${e.message}</div>`;
+  }
+}
+
+/* --------- Modal: Respaldo --------- */
+function renderBackupModal() {
+  const used = store.usage();
+  const archivos = ARCHIVOS.length;
+  const compras = Object.keys(COMPRAS).length;
+  const bodegas = Object.keys(BODEGAS_MAP).length;
+  const tiers = Object.keys(TIERS_MAP).length;
+  return `
+    <div class="modal-head">
+      <h2>Respaldo local</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">
+      Toda la información se guarda en tu navegador. Haz respaldos regulares para no perder datos, y para poder trabajar desde otro computador.
+    </div>
+
+    <div class="backup-section">
+      <h4>💾 Descargar respaldo completo</h4>
+      <p>Genera un archivo <b>.json</b> con todo: compras acumuladas, mapeo de bodegas, escalones y archivos cargados.</p>
+      <button class="btn accent" onclick="descargarRespaldo()">↓ Descargar respaldo (.json)</button>
+    </div>
+
+    <div class="backup-section">
+      <h4>↑ Restaurar desde respaldo</h4>
+      <p>Sube un respaldo previamente descargado. <b style="color:var(--red);">Reemplazará</b> los datos actuales.</p>
+      <input type="file" id="restoreInput" accept=".json" style="font-size:12px;">
+      <div id="restoreResult" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="backup-section">
+      <h4>🗑 Limpiar meses antiguos</h4>
+      <p>Elimina líneas del Excel anteriores al mes que elijas (útil si el almacenamiento se llena).</p>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="cleanBefore" style="padding:6px 10px;border-radius:4px;border:1px solid var(--line);">
+          ${availableMonths.map(m => `<option value="${m}">${monthLabel(m)}</option>`).join('')}
+        </select>
+        <button class="btn danger" onclick="limpiarAntes()">Eliminar anteriores</button>
+      </div>
+    </div>
+
+    <div class="storage-bar">
+      <div class="lbl">Contenido actual del navegador</div>
+      <div style="font-size:12px;color:var(--ink-soft);line-height:1.9;margin-top:6px;">
+        · ${compras} líneas de compras (${(used/1024).toFixed(0)} KB total)<br>
+        · ${bodegas} bodegas mapeadas<br>
+        · ${tiers} compradores con escalones personalizados<br>
+        · ${archivos} archivos históricos registrados
+      </div>
+    </div>
+  `;
+}
+
+function setupBackup() {
+  const inp = document.getElementById('restoreInput');
+  inp.onchange = (e) => {
+    const f = e.target.files[0];
+    if (f) restaurarRespaldo(f);
+  };
+}
+
+function descargarRespaldo() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    compras: COMPRAS,
+    bodegas: BODEGAS_MAP,
+    tiers: TIERS_MAP,
+    archivos: ARCHIVOS
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().substring(0, 10);
+  a.download = `respaldo_lutec_${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Respaldo descargado', 'success');
+}
+
+async function restaurarRespaldo(file) {
+  const rEl = document.getElementById('restoreResult');
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.version) throw new Error('Archivo no válido');
+    const ok = confirm(`Se van a reemplazar los datos actuales:\n\n· ${Object.keys(data.compras||{}).length} líneas de compras\n· ${Object.keys(data.bodegas||{}).length} bodegas\n· ${Object.keys(data.tiers||{}).length} compradores con tiers\n\n¿Continuar?`);
+    if (!ok) return;
+
+    store.setCompras(data.compras || {});
+    store.setBodegas(data.bodegas || {});
+    store.setTiers(data.tiers || {});
+    store.setArchivos(data.archivos || []);
+
+    COMPRAS = store.getCompras();
+    BODEGAS_MAP = store.getBodegas();
+    TIERS_MAP = store.getTiers();
+    ARCHIVOS = store.getArchivos();
+
+    detectAvailableMonths();
+    procesarTodo();
+    rEl.innerHTML = `<div style="color:var(--green);font-size:13px;">✓ Respaldo restaurado correctamente</div>`;
+    toast('Respaldo restaurado', 'success');
+    setTimeout(closeModal, 1500);
+  } catch(e) {
+    rEl.innerHTML = `<div style="color:var(--red);font-size:13px;">Error: ${e.message}</div>`;
+  }
+}
+
+function limpiarAntes() {
+  const before = document.getElementById('cleanBefore').value;
+  if (!before) return;
+  const ok = confirm(`¿Eliminar todas las compras anteriores a ${monthLabel(before)}?`);
+  if (!ok) return;
+  const nuevas = {};
+  Object.entries(COMPRAS).forEach(([k,v]) => {
+    if (monthKey(v.fecha) >= before) nuevas[k] = v;
+  });
+  const eliminadas = Object.keys(COMPRAS).length - Object.keys(nuevas).length;
+  store.setCompras(nuevas);
+  COMPRAS = nuevas;
+  detectAvailableMonths();
+  procesarTodo();
+  document.getElementById('modalContent').innerHTML = renderBackupModal();
+  setupBackup();
+  toast(`${eliminadas} líneas eliminadas`, 'success');
+}
+
+/* =============================================================================
+   EXPORTAR EXCEL
+   ============================================================================= */
+function exportarExcelCompleto() {
+  const compradores = Object.values(CROSSED.porComprador).sort((a,b) => b.comision - a.comision);
+  if (compradores.length === 0 && CROSSED.pendientes.length === 0 && CROSSED.sinPedido.length === 0) {
+    toast('No hay datos que exportar', 'error');
+    return;
+  }
   const wb = XLSX.utils.book_new();
-  buildConsolidadoSheet(wb);
-  DATA.forEach(d => buildBuyerSheet(wb, d));
-  const periodTag = monthLabel(currentMonth).replace(/\s+/g,'_');
-  XLSX.writeFile(wb, `Comisiones_${periodTag}.xlsx`);
+  buildConsolidadoSheet(wb, compradores);
+  compradores.forEach(c => buildBuyerSheet(wb, c));
+  buildPendientesSheet(wb);
+  buildSinPedidoSheet(wb);
+  if (CROSSED.conflictos.length) buildConflictosSheet(wb);
+  if (CROSSED.discrepancias.length) buildDiscrepanciasSheet(wb);
+  buildConfigSheet(wb);
+
+  const tag = monthLabel(currentMonth).replace(/\s+/g,'_');
+  XLSX.writeFile(wb, `Comisiones_${tag}.xlsx`);
   toast('Excel descargado', 'success');
 }
 
-function exportBuyerExcel() {
-  if (currentBuyerIdx === null) return;
-  const d = DATA[currentBuyerIdx];
+function exportarExcelComprador() {
+  if (!currentBuyerName) return;
+  const d = CROSSED.porComprador[currentBuyerName];
+  if (!d) return;
   const wb = XLSX.utils.book_new();
   buildBuyerSheet(wb, d);
-  const periodTag = monthLabel(currentMonth).replace(/\s+/g,'_');
-  XLSX.writeFile(wb, `Comisiones_${d.nombre.replace(/\s+/g,'_')}_${periodTag}.xlsx`);
+  const tag = monthLabel(currentMonth).replace(/\s+/g,'_');
+  XLSX.writeFile(wb, `Comisiones_${currentBuyerName.replace(/\s+/g,'_')}_${tag}.xlsx`);
   toast('Excel descargado', 'success');
 }
 
-function buildConsolidadoSheet(wb) {
+function _setFmt(ws, r, c, z) {
+  const addr = XLSX.utils.encode_cell({r, c});
+  if (ws[addr] && typeof ws[addr].v === 'number') ws[addr].z = z;
+}
+
+function buildConsolidadoSheet(wb, compradores) {
   const periodo = monthLabel(currentMonth);
   const rows = [
     ['TABLA COMISIONES / EQUIPO COMPRAS'],
     ['PERIODO:', periodo],
     [],
-    ['NOMBRE', 'COMPRADO', 'NEGOCIADO (PRESUPUESTO)', 'UTILIDAD', '% MARGEN', 'COMISIÓN', 'MATERIALES']
+    ['NOMBRE', 'COMPRADO', 'PRESUPUESTO', 'UTILIDAD', '% MARGEN', 'COMISIÓN', 'MATERIALES']
   ];
   let totC=0, totN=0, totU=0, totCom=0, totLin=0;
-  DATA.forEach(d => {
+  compradores.forEach(d => {
     rows.push([d.nombre, d.comprado, d.negociado, d.utilidad, +(d.pctMargen.toFixed(2)), d.comision, d.lineas.length]);
     totC += d.comprado; totN += d.negociado; totU += d.utilidad; totCom += d.comision; totLin += d.lineas.length;
   });
@@ -752,16 +1975,10 @@ function buildConsolidadoSheet(wb) {
   rows.push(['TOTAL', totC, totN, totU, totN>0 ? +((totU/totN*100).toFixed(2)) : 0, totCom, totLin]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:22},{wch:18},{wch:22},{wch:18},{wch:12},{wch:16},{wch:12}];
-  const formatMoneyCols = [1,2,3,5];
-  const pctCol = 4;
+  ws['!cols'] = [{wch:22},{wch:18},{wch:18},{wch:18},{wch:12},{wch:16},{wch:12}];
   for (let r = 4; r < rows.length; r++) {
-    formatMoneyCols.forEach(c => {
-      const cell = ws[XLSX.utils.encode_cell({r, c})];
-      if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
-    });
-    const pctCell = ws[XLSX.utils.encode_cell({r, c: pctCol})];
-    if (pctCell && typeof pctCell.v === 'number') pctCell.z = '0.00"%"';
+    [1,2,3,5].forEach(c => _setFmt(ws, r, c, '"$"#,##0'));
+    _setFmt(ws, r, 4, '0.00"%"');
   }
   XLSX.utils.book_append_sheet(wb, ws, 'CONSOLIDADO');
 }
@@ -771,82 +1988,159 @@ function buildBuyerSheet(wb, d) {
   const rows = [
     ['TABLA COMISIONES / EQUIPO COMPRAS'],
     ['NOMBRE:', d.nombre, '', '', '', '', '', '', 'PERIODO:', periodo],
-    ['TOTAL COMPRA:', d.comprado],
-    ['TOTAL NEGOCIACIÓN:', d.negociado],
+    ['TOTAL COMPRADO:', d.comprado],
+    ['TOTAL PRESUPUESTO:', d.negociado],
     ['TOTAL UTILIDAD:', d.utilidad],
     ['TOTAL COMISIÓN:', d.comision],
-    ['% MARGEN PROMEDIO:', +(d.pctMargen.toFixed(2))],
+    ['% MARGEN:', +(d.pctMargen.toFixed(2))],
     [],
-    ['Fecha','Tercero','Descripción','Cant','Unidad','Costo negociación','Total negociación','Costo compra','Total compra','Utilidad unitaria','Utilidad total','% Utilidad','% Comisión','Valor comisión']
+    ['Fecha','Bodega','OC','Código','Tercero','Descripción','Cant Pedida','Cant Comprada','Bolsa','V.Unitario','Total Compra','Utilidad Total','% Utilidad','% Comisión','Valor Comisión']
   ];
-  // ordenar por fecha
-  const ordenadas = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
-  ordenadas.forEach(l => {
-    const utilUnit = (l.bolsa||0) - (l.compra||0);
-    // Excel maneja mejor las fechas como Date reales
+  const ord = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  ord.forEach(l => {
     let fechaVal = l.fecha || '';
     if (fechaVal) {
-      const [y,m,dd] = fechaVal.split('-').map(n=>parseInt(n,10));
+      const [y,m,dd] = fechaVal.split('-').map(n => parseInt(n,10));
       fechaVal = new Date(Date.UTC(y, m-1, dd));
     }
     rows.push([
-      fechaVal,
-      l.tercero || '',
-      l.desc,
-      l.cant,
-      l.und || 'UND',
-      l.bolsa,
-      l.totalBolsa || (l.bolsa * l.cant),
-      l.compra,
-      l.totalCompra || (l.compra * l.cant),
-      utilUnit,
-      l.utilTotal,
-      +(l.pctUtil||0).toFixed(2),
-      l.pctComis,
-      l.valorComision
+      fechaVal, l.bodega, l.oc, l.codigo, l.tercero, l.descripcion,
+      l.cantMonday, l.cantExcel, l.bolsa, l.vunit,
+      l.totalCompra, l.utilTotal, +(l.pctUtil||0).toFixed(2), l.pctComis, l.valorComision
     ]);
   });
   rows.push([]);
-  rows.push(['','','TOTAL','','','','','','','','','','', d.comision]);
+  rows.push(['','','','','','TOTAL','','','','','','','','', d.comision]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates: true });
   ws['!cols'] = [
-    {wch:11},{wch:28},{wch:40},{wch:8},{wch:10},{wch:14},{wch:16},{wch:14},{wch:16},
-    {wch:14},{wch:14},{wch:10},{wch:11},{wch:14}
+    {wch:11},{wch:16},{wch:10},{wch:12},{wch:26},{wch:36},
+    {wch:10},{wch:10},{wch:12},{wch:12},{wch:14},{wch:14},{wch:10},{wch:11},{wch:14}
   ];
-  const headerRow = 8; // fila 9 (0-index 8)
+  const headerRow = 8;
   const dataStart = headerRow + 1;
-  const dataEnd = dataStart + ordenadas.length;
-  const dateCol = 0;
-  const moneyCols = [5,6,7,8,9,10,13];
-  const pctCols = [11,12];
+  const dataEnd = dataStart + ord.length;
   for (let r = dataStart; r < dataEnd; r++) {
-    const dateCell = ws[XLSX.utils.encode_cell({r, c: dateCol})];
+    const dateCell = ws[XLSX.utils.encode_cell({r, c: 0})];
     if (dateCell && dateCell.v instanceof Date) dateCell.z = 'dd/mm/yyyy';
-    moneyCols.forEach(c => {
-      const cell = ws[XLSX.utils.encode_cell({r, c})];
-      if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
-    });
-    pctCols.forEach(c => {
-      const cell = ws[XLSX.utils.encode_cell({r, c})];
-      if (cell && typeof cell.v === 'number') cell.z = '0.00"%"';
-    });
+    [8,9,10,11,14].forEach(c => _setFmt(ws, r, c, '"$"#,##0'));
+    [12,13].forEach(c => _setFmt(ws, r, c, '0.00"%"'));
   }
-  for (let r = 2; r <= 5; r++) {
-    const cell = ws[XLSX.utils.encode_cell({r, c: 1})];
-    if (cell && typeof cell.v === 'number') cell.z = '"$"#,##0';
-  }
-  const marginCell = ws[XLSX.utils.encode_cell({r: 6, c: 1})];
-  if (marginCell && typeof marginCell.v === 'number') marginCell.z = '0.00"%"';
+  for (let r = 2; r <= 5; r++) _setFmt(ws, r, 1, '"$"#,##0');
+  _setFmt(ws, 6, 1, '0.00"%"');
 
   const sheetName = d.nombre.replace(/[\\\/\?\*\[\]:]/g, '').substring(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 }
 
-// =====================================================================
-// INICIO
-// =====================================================================
-cargar();
+function buildPendientesSheet(wb) {
+  const rows = [
+    ['PENDIENTES POR COMPRAR'],
+    ['PERIODO:', monthLabel(currentMonth)],
+    [],
+    ['OC','Código','Descripción','Cant Pedida','Cant Comprada','Faltante','Bolsa','Valor Bolsa Pendiente','Logístico','Proveedor']
+  ];
+  CROSSED.pendientes.forEach(p => {
+    rows.push([p.oc, p.codigo, p.descripcion, p.cantPedida, p.cantComprada, p.cantFaltante, p.bolsa, p.bolsa * p.cantFaltante, p.logistico, p.proveedor]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:10},{wch:12},{wch:40},{wch:12},{wch:12},{wch:12},{wch:12},{wch:16},{wch:20},{wch:26}];
+  for (let r = 4; r < rows.length; r++) {
+    [6,7].forEach(c => _setFmt(ws, r, c, '"$"#,##0'));
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'PENDIENTES');
+}
+
+function buildSinPedidoSheet(wb) {
+  const rows = [
+    ['COMPRAS SIN PEDIDO EN MONDAY'],
+    ['PERIODO:', monthLabel(currentMonth)],
+    [],
+    ['Fecha','OC','Código','Descripción','Bodega','Comprador (por bodega)','Tercero','Cant','V.Unitario','Total']
+  ];
+  CROSSED.sinPedido.forEach(l => {
+    let fechaVal = l.fecha || '';
+    if (fechaVal) {
+      const [y,m,dd] = fechaVal.split('-').map(n => parseInt(n,10));
+      fechaVal = new Date(Date.UTC(y, m-1, dd));
+    }
+    rows.push([fechaVal, normOC(l.oc), normCod(l.codigo), l.descripcion, l.bodega, l.comprador, l.tercero, l.cant, l.valorUnitario, l.valorUnitario * l.cant]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates: true });
+  ws['!cols'] = [{wch:11},{wch:10},{wch:12},{wch:40},{wch:16},{wch:20},{wch:26},{wch:8},{wch:12},{wch:14}];
+  for (let r = 4; r < rows.length; r++) {
+    const dc = ws[XLSX.utils.encode_cell({r, c: 0})];
+    if (dc && dc.v instanceof Date) dc.z = 'dd/mm/yyyy';
+    [8,9].forEach(c => _setFmt(ws, r, c, '"$"#,##0'));
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'SIN PEDIDO');
+}
+
+function buildConflictosSheet(wb) {
+  const rows = [
+    ['CONFLICTOS OC + CÓDIGO EN MONDAY'],
+    [],
+    ['OC','Código','Desc. en Excel','Cant. matches','Descripciones en Monday']
+  ];
+  CROSSED.conflictos.forEach(c => {
+    rows.push([c.oc, c.codigo, c.descExcel, c.items.length, c.items.map(i => `${i.descripcion} (bolsa ${i.bolsa}, cant ${i.cantidad})`).join(' | ')]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:10},{wch:12},{wch:36},{wch:12},{wch:80}];
+  XLSX.utils.book_append_sheet(wb, ws, 'CONFLICTOS');
+}
+
+function buildDiscrepanciasSheet(wb) {
+  const rows = [
+    ['DISCREPANCIAS DE PRECIO'],
+    [],
+    ['Fecha','OC','Código','Descripción','V.Unit anterior','V.Unit nuevo','Diferencia']
+  ];
+  CROSSED.discrepancias.forEach(d => {
+    let fechaVal = d.fecha;
+    if (fechaVal) {
+      const [y,m,dd] = String(fechaVal).split('-').map(n => parseInt(n,10));
+      fechaVal = new Date(Date.UTC(y, m-1, dd));
+    }
+    rows.push([fechaVal, d.oc, d.codigo, d.descripcion, d.valorAnterior, d.valorNuevo, d.valorNuevo - d.valorAnterior]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates: true });
+  ws['!cols'] = [{wch:11},{wch:10},{wch:12},{wch:36},{wch:14},{wch:14},{wch:14}];
+  for (let r = 3; r < rows.length; r++) {
+    const dc = ws[XLSX.utils.encode_cell({r, c: 0})];
+    if (dc && dc.v instanceof Date) dc.z = 'dd/mm/yyyy';
+    [4,5,6].forEach(c => _setFmt(ws, r, c, '"$"#,##0'));
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'DISCREPANCIAS');
+}
+
+function buildConfigSheet(wb) {
+  const rows = [
+    ['CONFIGURACIÓN VIGENTE'],
+    ['Exportado:', new Date().toLocaleString('es-CO')],
+    [],
+    ['Bodegas → Comprador'],
+    ['Bodega','Comprador']
+  ];
+  Object.entries(BODEGAS_MAP).sort().forEach(([b,c]) => rows.push([b, c]));
+  rows.push([], ['Escalones personalizados por comprador'], ['Comprador','Escalones']);
+  Object.entries(TIERS_MAP).forEach(([n, tiers]) => {
+    const str = tiers.map((t,i) => {
+      const desde = i === 0 ? 0 : tiers[i-1].hasta;
+      const rango = t.hasta === null ? `≥ ${desde}%` : `${desde}%–${t.hasta}%`;
+      return `${rango}: ${t.tasa}%`;
+    }).join(' | ');
+    rows.push([n, str]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:24},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, ws, 'CONFIGURACION');
+}
+
+/* =============================================================================
+   INICIO
+   ============================================================================= */
+cargarMonday();
 </script>
 </body>
 </html>
