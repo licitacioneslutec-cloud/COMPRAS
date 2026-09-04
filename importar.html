@@ -161,8 +161,26 @@ async function importar() {
   try {
     const resp = await fetch(IMPORT_URL);
     if (!resp.ok) throw new Error('Error HTTP ' + resp.status);
-    addLog('n8n confirmó recepción — procesando pedidos en segundo plano');
-    setStatus('ok', 'Importación enviada. Los sub-items se crearán en Monday en los próximos segundos.');
+
+    let data;
+    try { data = await resp.json(); } catch(e) { data = null; }
+
+    if (!data || data.total === undefined) {
+      addLog('n8n confirmó recepción — procesando en segundo plano');
+      setStatus('ok', 'Importación enviada.');
+      return;
+    }
+
+    if (data.total === 0) {
+      setStatus('ok', 'No hay pedidos pendientes de importar.');
+      addLog('No se encontraron pedidos con estado "Descargar archivo"');
+    } else {
+      setStatus('ok', 'Procesando ' + data.total + ' pedido(s). Los sub-items se crearán en Monday.');
+      data.pedidos.forEach(function(nombre, i) {
+        addLog((i + 1) + '. ' + nombre);
+      });
+      addLog('Se encontraron ' + data.total + ' pedido(s) para importar');
+    }
   } catch(e) {
     console.error(e);
     addLog('Error: ' + e.message);
