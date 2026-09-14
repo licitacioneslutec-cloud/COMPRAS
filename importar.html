@@ -175,16 +175,24 @@ async function importar() {
       setStatus('ok', 'No hay pedidos pendientes de importar.');
       addLog('No se encontraron pedidos con estado "Descargar archivo"');
     } else {
-      setStatus('ok', 'Procesando ' + data.total + ' pedido(s). Los sub-items se crearán en Monday.');
+      setStatus('running', 'Procesando ' + data.total + ' pedido(s)… Los sub-items se están creando en Monday.');
       data.pedidos.forEach(function(nombre, i) {
         addLog((i + 1) + '. ' + nombre);
       });
       addLog('Se encontraron ' + data.total + ' pedido(s) para importar');
+      addLog('<a href="https://licitaciones3.app.n8n.cloud/workflow/OPzGWuBFNYx7VgcG/executions" target="_blank" style="color:#2c3e50;text-decoration:underline;">Ver estado en n8n</a>');
     }
   } catch(e) {
     console.error(e);
-    addLog('Error: ' + e.message);
-    setStatus('err', 'No se pudo conectar con n8n: ' + e.message);
+    let errorMsg = e.message;
+    if (errorMsg.includes('Failed to fetch')) {
+      errorMsg = 'No se pudo conectar con n8n. Verifique que el workflow esté activo.';
+    } else if (errorMsg.includes('HOJA_INCORRECTA')) {
+      errorMsg = 'El Excel tiene la información en una hoja secundaria. Mueva los datos a la primera hoja.';
+    }
+    addLog('Error: ' + errorMsg);
+    setStatus('err', errorMsg);
+    addLog('<a href="https://licitaciones3.app.n8n.cloud/workflow/OPzGWuBFNYx7VgcG/executions" target="_blank" style="color:#2c3e50;text-decoration:underline;">Ver detalles en n8n</a>');
   } finally {
     btn.disabled = false;
     icon.innerHTML = '📥';
