@@ -241,9 +241,35 @@
     .top-btn { padding: 6px 8px; font-size: 11px; }
     .tab-label { display: none; }
   }
+
+  /* ========== LOGIN OVERLAY ========== */
+  .login-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--navy); display: flex; align-items: center; justify-content: center; }
+  .login-overlay.hidden { display: none; }
+  .login-box { background: var(--card); border-radius: 16px; padding: 40px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .login-box .logo { font-size: 28px; font-weight: 700; letter-spacing: 3px; color: var(--navy); margin-bottom: 6px; }
+  .login-box .logo span { color: var(--lime-dim); }
+  .login-box .login-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 24px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; margin-bottom: 16px; outline: none; font-family: inherit; }
+  .login-box input:focus { border-color: var(--lime); }
+  .login-box .login-btn { width: 100%; padding: 12px; background: var(--lime); color: var(--navy); border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .login-box .login-btn:hover { background: var(--lime-dim); }
+  .login-box .login-err { color: var(--red); font-size: 12px; margin-top: 8px; min-height: 18px; }
 </style>
 </head>
 <body>
+
+<!-- ========== LOGIN ========== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="logo">LU<span>TEC</span></div>
+    <div class="login-sub">Ingrese la contraseña para acceder</div>
+    <form onsubmit="return handleLogin(event)">
+      <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password">
+      <button type="submit" class="login-btn">Ingresar</button>
+    </form>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
 
 <!-- ========== TOPBAR ========== -->
 <div class="topbar">
@@ -356,6 +382,56 @@
 
 <script>
 'use strict';
+
+/* =============================================================================
+   AUTENTICACIÓN
+   ============================================================================= */
+const AUTH_HASH = '0986b36150ba8716a4ce5b1f0f0b3075eeedb34429cc27b3077c8fcc945ee734';
+const AUTH_KEY = 'lutec_auth_session';
+
+function sha256(str) {
+  function rr(n,x){return(x>>>n)|(x<<(32-n));}
+  const k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
+  const enc=new TextEncoder().encode(str);const bl=enc.length*8;
+  const pad=new Uint8Array(((enc.length+9+63)&~63));pad.set(enc);pad[enc.length]=0x80;
+  const dv=new DataView(pad.buffer);dv.setUint32(pad.length-4,bl);
+  for(let o=0;o<pad.length;o+=64){
+    const w=new Int32Array(64);
+    for(let i=0;i<16;i++)w[i]=dv.getInt32(o+i*4);
+    for(let i=16;i<64;i++){const s0=rr(7,w[i-15])^rr(18,w[i-15])^(w[i-15]>>>3);const s1=rr(17,w[i-2])^rr(19,w[i-2])^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)|0;}
+    let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+    for(let i=0;i<64;i++){const S1=rr(6,e)^rr(11,e)^rr(25,e);const ch=(e&f)^(~e&g);const t1=(h+S1+ch+k[i]+w[i])|0;const S0=rr(2,a)^rr(13,a)^rr(22,a);const maj=(a&b)^(a&c)^(b&c);const t2=(S0+maj)|0;h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;}
+    h0=(h0+a)|0;h1=(h1+b)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;h5=(h5+f)|0;h6=(h6+g)|0;h7=(h7+h)|0;
+  }
+  return [h0,h1,h2,h3,h4,h5,h6,h7].map(v=>(v>>>0).toString(16).padStart(8,'0')).join('');
+}
+
+function isAuthenticated() {
+  try { return sessionStorage.getItem(AUTH_KEY) === AUTH_HASH; } catch(e) { return false; }
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const pass = document.getElementById('loginPass').value;
+  const hash = sha256(pass);
+  if (hash === AUTH_HASH) {
+    try { sessionStorage.setItem(AUTH_KEY, AUTH_HASH); } catch(e) {}
+    document.getElementById('loginOverlay').classList.add('hidden');
+    cargarMonday();
+  } else {
+    document.getElementById('loginErr').textContent = 'Contraseña incorrecta';
+    document.getElementById('loginPass').value = '';
+  }
+  return false;
+}
 
 /* =============================================================================
    CONFIGURACIÓN
@@ -2285,7 +2361,10 @@ function buildConfigSheet(wb) {
 /* =============================================================================
    INICIO
    ============================================================================= */
-cargarMonday();
+if (isAuthenticated()) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  cargarMonday();
+}
 </script>
 </body>
 </html>
