@@ -106,6 +106,8 @@
   .btn.accent:hover { background: var(--lime-dim); border-color: var(--lime-dim); color: var(--navy); }
   .btn.danger { color: var(--red); border-color: #e6c7c7; }
   .btn.danger:hover { background: var(--red); color: #fff; }
+  .btn-small { background: var(--card); border: 1px solid var(--line); color: var(--navy); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .btn-small:hover { background: var(--navy); color: #fff; }
 
   table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
   thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; white-space: nowrap; }
@@ -455,7 +457,8 @@ const STORAGE_KEYS = {
   compras: 'lutec_compras_v1',        // { hash: { fecha, oc, codigo, ...} }
   bodegas: 'lutec_bodegas_v1',        // { bodegaNombre: compradorNombre }
   tiers: 'lutec_tiers_v1',            // { compradorNombre: [{hasta,tasa}] }
-  archivos: 'lutec_archivos_v1'       // [{ nombre, fecha, lineas, mes }]
+  archivos: 'lutec_archivos_v1',      // [{ nombre, fecha, lineas, mes }]
+  overrides: 'lutec_overrides_v1'     // { excelHash: { oc, codigo, ts } } — pairing manual sinPedido→Monday
 };
 
 function _load(key, def) {
@@ -487,6 +490,8 @@ const store = {
   setTiers: (v) => _save(STORAGE_KEYS.tiers, v),
   getArchivos: () => _load(STORAGE_KEYS.archivos, []),
   setArchivos: (v) => _save(STORAGE_KEYS.archivos, v),
+  getOverrides: () => _load(STORAGE_KEYS.overrides, {}),
+  setOverrides: (v) => _save(STORAGE_KEYS.overrides, v),
   // Uso aproximado en bytes
   usage: () => {
     let total = 0;
@@ -506,6 +511,7 @@ let COMPRAS = {};             // datos del Excel (acumulados en localStorage)
 let BODEGAS_MAP = {};         // bodega → comprador
 let TIERS_MAP = {};           // comprador → tiers custom
 let ARCHIVOS = [];            // historial de subidas
+let OVERRIDES = {};           // { excelHash: { oc, codigo, ts } } — pairing manual
 
 let currentMonth = '__all__';
 let availableMonths = [];
@@ -623,6 +629,7 @@ async function cargarMonday(isReload=false) {
     BODEGAS_MAP = store.getBodegas();
     TIERS_MAP = store.getTiers();
     ARCHIVOS = store.getArchivos();
+    OVERRIDES = store.getOverrides();
 
     detectAvailableMonths();
     procesarTodo();
@@ -652,17 +659,18 @@ async function cargarMonday(isReload=false) {
    MESES DISPONIBLES
    ============================================================================= */
 function detectAvailableMonths() {
-  const set = new Set();
+  const countByMonth = {};
   Object.values(COMPRAS).forEach(l => {
     const k = monthKey(l.fecha);
-    if (k) set.add(k);
+    if (k) countByMonth[k] = (countByMonth[k] || 0) + 1;
   });
-  availableMonths = Array.from(set).sort().reverse();
+  availableMonths = Object.keys(countByMonth).sort().reverse();
+  const totalLineas = Object.values(countByMonth).reduce((a,b) => a+b, 0);
 
   const sel = document.getElementById('monthSelect');
   const prev = sel.value;
-  sel.innerHTML = '<option value="__all__">Todos los meses</option>' +
-    availableMonths.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+  sel.innerHTML = `<option value="__all__">Todos los meses (${totalLineas} líneas)</option>` +
+    availableMonths.map(k => `<option value="${k}">${monthLabel(k)} (${countByMonth[k]} líneas)</option>`).join('');
 
   if (prev && (prev === '__all__' || availableMonths.includes(prev))) {
     sel.value = prev;
@@ -748,12 +756,21 @@ function procesarTodo() {
   // 1. Recorrer compras del Excel
   compras.forEach(c => {
     const k = keyOCCod(c.oc, c.codigo);
-    const matches = idxMonday[k];
+    let matches = idxMonday[k];
+    let viaOverride = false;
+
+    // Fallback: pairing manual guardado
+    if ((!matches || matches.length === 0) && OVERRIDES[hashLinea(c)]) {
+      const o = OVERRIDES[hashLinea(c)];
+      matches = idxMonday[keyOCCod(o.oc, o.codigo)];
+      if (matches && matches.length) viaOverride = true;
+    }
 
     if (!matches || matches.length === 0) {
       // No hay pedido en Monday para esta compra
       sinPedido.push({
         ...c,
+        hash: hashLinea(c),
         comprador: compradorPorBodega(c.bodega)
       });
       return;
@@ -803,7 +820,9 @@ function procesarTodo() {
       pctUtil,
       comprador,
       logistico: monday.logistico,
-      mondayId: monday.id
+      mondayId: monday.id,
+      excelHash: hashLinea(c),
+      viaOverride
     });
   });
 
@@ -859,13 +878,14 @@ function procesarTodo() {
     if (!porComprador[l.comprador]) {
       porComprador[l.comprador] = {
         nombre: l.comprador, lineas: [],
-        comprado: 0, negociado: 0, utilidad: 0
+        comprado: 0, negociado: 0, utilidad: 0, valorSolicitado: 0
       };
     }
     porComprador[l.comprador].lineas.push(l);
     porComprador[l.comprador].comprado += l.totalCompra;
     porComprador[l.comprador].negociado += l.totalBolsa;
     porComprador[l.comprador].utilidad += l.utilTotal;
+    porComprador[l.comprador].valorSolicitado += (l.cantMonday || 0) * (l.bolsa || 0);
   });
 
   // 5. Aplicar escalones (por comprador) y calcular comisión
@@ -1240,12 +1260,12 @@ function renderExtras() {
   } else {
     bs.innerHTML = `
       <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
-        Líneas del Excel que no encontraron un pedido en Monday (revisar si faltan por crear en Monday). Valor total: <b>${fmt(totalValorSinPedido)}</b>
+        Líneas del Excel que no encontraron un pedido en Monday. Usa <b>Emparejar</b> si sabes a qué pedido corresponde. Valor total: <b>${fmt(totalValorSinPedido)}</b>
       </div>
       <div class="table-wrap"><table>
         <thead><tr>
           <th class="tl">Fecha</th><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th>
-          <th class="tl">Bodega</th><th class="tl">Comprador</th><th>Cant</th><th>V.Unit</th><th>Total</th>
+          <th class="tl">Bodega</th><th class="tl">Comprador</th><th>Cant</th><th>V.Unit</th><th>Total</th><th></th>
         </tr></thead>
         <tbody>${S.map(l => `<tr>
           <td class="tl">${fmtFecha(l.fecha)}</td>
@@ -1257,6 +1277,7 @@ function renderExtras() {
           <td>${l.cant}</td>
           <td>${fmt(l.valorUnitario)}</td>
           <td>${fmt(l.valorUnitario * l.cant)}</td>
+          <td><button class="btn-small" onclick="openPairModal('${(l.hash || '').replace(/'/g,"\\'")}')">Emparejar</button></td>
         </tr>`).join('')}</tbody>
       </table></div>`;
   }
@@ -1373,6 +1394,7 @@ function showDetail(nombre) {
   renderTiersEditor(nombre);
 
   document.getElementById('detailStats').innerHTML = `
+    <div class="stat"><div class="lbl">Valor solicitado</div><div class="val">${fmt(d.valorSolicitado)}</div></div>
     <div class="stat"><div class="lbl">Comprado</div><div class="val">${fmt(d.comprado)}</div></div>
     <div class="stat"><div class="lbl">Presupuesto</div><div class="val">${fmt(d.negociado)}</div></div>
     <div class="stat"><div class="lbl">Utilidad</div><div class="val">${fmt(d.utilidad)}</div></div>
@@ -1386,7 +1408,7 @@ function showDetail(nombre) {
       <th>Ped</th><th>Comp</th><th>Bolsa</th><th>V.Unit</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
     </tr></thead>
     <tbody>${ord.map(l => `<tr>
-      <td class="tl">${fmtFecha(l.fecha)}</td>
+      <td class="tl">${fmtFecha(l.fecha)}${l.viaOverride ? ` <span title="Emparejado manualmente — click para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoPair('${(l.excelHash||'').replace(/'/g,"\\'")}')">⇄</span>` : ''}</td>
       <td class="tl">${l.bodega || '—'}</td>
       <td class="tl">${l.oc}</td>
       <td class="tl">${l.codigo}</td>
@@ -1401,7 +1423,10 @@ function showDetail(nombre) {
       <td>${commissionBadge(l.pctComis)}</td>
       <td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="13">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr></tfoot>`;
+    <tfoot>
+      <tr><td colspan="13">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
+      <tr><td colspan="13">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
+    </tfoot>`;
 
   // Faltantes de este comprador (por bodega)
   const bodegasDel = new Set(d.lineas.map(l => l.bodega).filter(Boolean));
@@ -1569,15 +1594,120 @@ function openModal(kind) {
   if (kind === 'config') mc.innerHTML = renderConfigModal();
   else if (kind === 'upload') mc.innerHTML = renderUploadModal();
   else if (kind === 'backup') mc.innerHTML = renderBackupModal();
+  else if (kind === 'pair') mc.innerHTML = renderPairModal();
   bd.classList.add('show');
   // handlers post-render
   if (kind === 'upload') setupUpload();
   if (kind === 'backup') setupBackup();
+  if (kind === 'pair') setupPair();
 }
 
 function closeModal() {
   document.getElementById('modalBackdrop').classList.remove('show');
   currentModal = null;
+}
+
+/* --------- Pairing manual (sinPedido ↔ Monday pendientes) --------- */
+let pairingHash = null;   // hash de la línea Excel que se está emparejando
+
+function openPairModal(hash) {
+  pairingHash = hash;
+  openModal('pair');
+}
+
+function renderPairModal() {
+  // Datos de la línea Excel que se está emparejando
+  const excelRow = CROSSED.sinPedido.find(l => l.hash === pairingHash);
+  if (!excelRow) {
+    return `<div class="modal-head"><h2>Emparejar manualmente</h2><button class="modal-close" onclick="closeModal()">×</button></div>
+      <div style="padding:20px;color:var(--red);">No se encontró la línea del Excel. Recarga la página.</div>`;
+  }
+  // Universo de Monday candidatos: todos los items (no sólo "pendientes") con oc+codigo
+  const candidatos = MATERIALES_MONDAY.filter(m => m.oc || m.codigo).map(m => ({
+    oc: normOC(m.oc) || '—',
+    codigo: normCod(m.codigo) || '—',
+    descripcion: m.descripcion || '',
+    bolsa: m.bolsa || 0,
+    cantidad: m.cantidad || 0,
+    logistico: m.logistico || '',
+    proveedor: m.proveedor || ''
+  }));
+  return `
+    <div class="modal-head">
+      <h2>Emparejar línea de Excel con Monday</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div style="padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper);">
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;">Línea del Excel sin pedido:</div>
+      <div style="font-size:13px;"><b>OC ${normOC(excelRow.oc) || '—'} · Código ${normCod(excelRow.codigo) || '—'}</b></div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">${excelRow.descripcion || '—'} · ${excelRow.bodega || '—'} · ${excelRow.cant} × ${fmt(excelRow.valorUnitario)}</div>
+    </div>
+    <div style="padding:12px 20px;">
+      <input id="pairSearch" placeholder="Buscar en Monday por OC, código o descripción…" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;" />
+    </div>
+    <div style="max-height:420px;overflow-y:auto;padding:0 20px 20px;" id="pairList">
+      ${renderPairRows(candidatos)}
+    </div>`;
+}
+
+function renderPairRows(items) {
+  if (items.length === 0) return `<div class="empty-msg">Sin resultados.</div>`;
+  return `<div class="table-wrap"><table>
+    <thead><tr><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>Bolsa</th><th>Cant</th><th class="tl">Logístico</th><th></th></tr></thead>
+    <tbody>${items.slice(0, 200).map(c => `<tr>
+      <td class="tl">${c.oc}</td>
+      <td class="tl">${c.codigo}</td>
+      <td class="tl desc">${c.descripcion || '—'}</td>
+      <td>${fmt(c.bolsa)}</td>
+      <td>${c.cantidad}</td>
+      <td class="tl">${c.logistico || '—'}</td>
+      <td><button class="btn-small" onclick="confirmPair('${c.oc.replace(/'/g,"\\'")}','${c.codigo.replace(/'/g,"\\'")}')">Emparejar</button></td>
+    </tr>`).join('')}${items.length > 200 ? `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${items.length - 200} más. Usa el buscador.</td></tr>` : ''}</tbody>
+  </table></div>`;
+}
+
+function setupPair() {
+  const inp = document.getElementById('pairSearch');
+  if (!inp) return;
+  const todos = MATERIALES_MONDAY.filter(m => m.oc || m.codigo).map(m => ({
+    oc: normOC(m.oc) || '—',
+    codigo: normCod(m.codigo) || '—',
+    descripcion: m.descripcion || '',
+    bolsa: m.bolsa || 0,
+    cantidad: m.cantidad || 0,
+    logistico: m.logistico || '',
+    proveedor: m.proveedor || ''
+  }));
+  inp.addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = !q ? todos : todos.filter(c =>
+      c.oc.toLowerCase().includes(q) ||
+      c.codigo.toLowerCase().includes(q) ||
+      c.descripcion.toLowerCase().includes(q) ||
+      c.logistico.toLowerCase().includes(q)
+    );
+    document.getElementById('pairList').innerHTML = renderPairRows(filtered);
+  });
+  inp.focus();
+}
+
+function confirmPair(oc, codigo) {
+  if (!pairingHash) return;
+  OVERRIDES[pairingHash] = { oc, codigo, ts: new Date().toISOString() };
+  store.setOverrides(OVERRIDES);
+  pairingHash = null;
+  closeModal();
+  procesarTodo();
+  toast(`Línea emparejada con OC ${oc} · ${codigo}`, 'success');
+}
+
+function undoPair(hash) {
+  if (!OVERRIDES[hash]) return;
+  delete OVERRIDES[hash];
+  store.setOverrides(OVERRIDES);
+  procesarTodo();
+  if (currentBuyerName) showDetail(currentBuyerName);
+  toast('Emparejamiento manual deshecho', 'success');
 }
 
 /* --------- Modal: Configuración --------- */
@@ -1835,6 +1965,26 @@ function setupUpload() {
   };
 }
 
+// Normaliza nombres de columna: sin tildes, sin espacios/_/-/., minúsculas.
+// Permite que un Excel con header "Código" o "Documento Origen" o "codigo_inventario" matchee igual.
+function normHeader(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .toLowerCase().replace(/[\s_\-\.]/g, '');
+}
+function buildRowMap(row) {
+  const m = {};
+  for (const k of Object.keys(row)) m[normHeader(k)] = row[k];
+  return m;
+}
+function pickFromMap(m, ...aliases) {
+  for (const a of aliases) {
+    const v = m[normHeader(a)];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return null;
+}
+
 async function procesarArchivoExcel(file) {
   const rEl = document.getElementById('uploadResult');
   rEl.innerHTML = `<div class="upload-result">Procesando <b>${file.name}</b>…</div>`;
@@ -1842,25 +1992,25 @@ async function procesarArchivoExcel(file) {
   try {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-    // Buscar hoja con las columnas esperadas
+    // Buscar hoja con las columnas esperadas (detección insensible a tildes/espacios/mayúsculas)
     let hoja = null;
     let filas = null;
     for (const sn of wb.SheetNames) {
       const ws = wb.Sheets[sn];
       const arr = XLSX.utils.sheet_to_json(ws, { defval: null });
       if (!arr.length) continue;
-      const cols = Object.keys(arr[0]);
-      // Detectamos si tiene las columnas críticas
-      const tieneCod = cols.includes('CodigoInventario') || cols.includes('Codigo Inventario') || cols.includes('codigo_inventario');
-      const tieneDoc = cols.includes('Documento_Origen') || cols.includes('Documento Origen') || cols.includes('Numero_Documento');
-      const tieneFecha = cols.includes('Fecha');
-      const tieneVunit = cols.includes('Valor_Unitario') || cols.includes('Valor Unitario');
+      const normCols = new Set(Object.keys(arr[0]).map(normHeader));
+      const has = (...xs) => xs.some(x => normCols.has(normHeader(x)));
+      const tieneCod   = has('CodigoInventario', 'Codigo Inventario', 'codigo_inventario', 'Codigo', 'Código', 'Articulo', 'Artículo');
+      const tieneDoc   = has('Documento_Origen', 'Documento Origen', 'Numero_Documento', 'OC', 'Documento');
+      const tieneFecha = has('Fecha');
+      const tieneVunit = has('Valor_Unitario', 'Valor Unitario', 'ValorUnitario', 'Vr Unitario', 'Precio Unitario');
       if (tieneCod && (tieneDoc || tieneFecha) && tieneVunit) {
         hoja = sn; filas = arr; break;
       }
     }
     if (!filas) {
-      rEl.innerHTML = `<div class="upload-result" style="border-left:3px solid var(--red);"><b>Error:</b> no se encontró una hoja con las columnas esperadas (CodigoInventario, Documento_Origen, Fecha, Valor_Unitario).</div>`;
+      rEl.innerHTML = `<div class="upload-result" style="border-left:3px solid var(--red);"><b>Error:</b> no se encontró una hoja con las columnas esperadas (código, documento origen / OC, fecha, valor unitario). Se aceptan nombres con o sin tildes.</div>`;
       return;
     }
 
@@ -1872,9 +2022,10 @@ async function procesarArchivoExcel(file) {
     const comprasActuales = store.getCompras();
 
     filas.forEach(row => {
-      const oc = row['Documento_Origen'] || row['Documento Origen'] || row['Numero_Documento'] || '';
-      const codigo = row['CodigoInventario'] || row['Codigo Inventario'] || row['codigo_inventario'] || '';
-      let fecha = row['Fecha'];
+      const m = buildRowMap(row);
+      const oc = pickFromMap(m, 'Documento_Origen', 'Documento Origen', 'Numero_Documento', 'OC', 'Documento') || '';
+      const codigo = pickFromMap(m, 'CodigoInventario', 'Codigo Inventario', 'codigo_inventario', 'Codigo', 'Código', 'Articulo', 'Artículo') || '';
+      let fecha = pickFromMap(m, 'Fecha');
       if (fecha instanceof Date) {
         fecha = fecha.toISOString().substring(0, 10);
       } else if (typeof fecha === 'string') {
@@ -1889,18 +2040,18 @@ async function procesarArchivoExcel(file) {
         fecha: fecha || '',
         oc: normOC(oc),
         codigo: normCod(codigo),
-        descripcion: row['Descripcion'] || row['Descripción'] || '',
-        tercero: row['Tercero'] || '',
-        bodega: row['Bodega'] || '',
-        cant: parseFloat(row['Cant'] || 0) || 0,
-        unidad: row['UnidadDeMedida'] || row['Unidad'] || 'UND',
-        valorUnitario: parseFloat(row['Valor_Unitario'] || row['Valor Unitario'] || 0) || 0,
-        subtotal: parseFloat(row['Subtotal'] || 0) || 0,
-        iva: row['Iva'] || '',
-        notaDetalle: row['Nota_Detalle'] || row['Nota Detalle'] || '',
-        centroCosto: row['Centro_de_Costos'] || row['Centro de Costos'] || '',
-        numeroDoc: row['Numero_Documento'] || '',
-        nota: row['Nota'] || '',
+        descripcion: pickFromMap(m, 'Descripcion', 'Descripción', 'Descripcion Articulo', 'Detalle') || '',
+        tercero: pickFromMap(m, 'Tercero', 'Proveedor', 'NombreTercero') || '',
+        bodega: pickFromMap(m, 'Bodega', 'Almacen', 'Almacén', 'CentroCosto') || '',
+        cant: parseFloat(pickFromMap(m, 'Cant', 'Cantidad') || 0) || 0,
+        unidad: pickFromMap(m, 'UnidadDeMedida', 'Unidad', 'UndMedida', 'UM') || 'UND',
+        valorUnitario: parseFloat(pickFromMap(m, 'Valor_Unitario', 'Valor Unitario', 'ValorUnitario', 'Vr Unitario', 'Precio Unitario') || 0) || 0,
+        subtotal: parseFloat(pickFromMap(m, 'Subtotal', 'Total') || 0) || 0,
+        iva: pickFromMap(m, 'Iva', 'IVA') || '',
+        notaDetalle: pickFromMap(m, 'Nota_Detalle', 'Nota Detalle', 'NotaDetalle') || '',
+        centroCosto: pickFromMap(m, 'Centro_de_Costos', 'Centro de Costos', 'CentroCostos') || '',
+        numeroDoc: pickFromMap(m, 'Numero_Documento', 'Numero Documento') || '',
+        nota: pickFromMap(m, 'Nota', 'Observaciones') || '',
         sourceFile: file.name,
         uploadedAt: new Date().toISOString()
       };
@@ -1947,17 +2098,21 @@ async function procesarArchivoExcel(file) {
     COMPRAS = merged;
     ULTIMA_DISCREPANCIAS = discrepancias;
 
-    // Registrar el archivo en el historial
-    ARCHIVOS.push({
-      nombre: file.name,
-      fecha: new Date().toISOString(),
-      lineas: Object.keys(nuevas).length,
-      duplicados: dupExactos,
-      discrepancias: discrepancias.length,
-      mes: mesesTocados.size === 1 ? Array.from(mesesTocados)[0] : '',
-      hashes: Object.keys(nuevas)
-    });
-    store.setArchivos(ARCHIVOS);
+    // Registrar el archivo en el historial (solo si trajo líneas nuevas)
+    const mesesArr = Array.from(mesesTocados).sort();
+    if (Object.keys(nuevas).length > 0) {
+      ARCHIVOS.push({
+        nombre: file.name,
+        fecha: new Date().toISOString(),
+        lineas: Object.keys(nuevas).length,
+        duplicados: dupExactos,
+        discrepancias: discrepancias.length,
+        mes: mesesArr[0] || '',           // compat con lectores viejos
+        meses: mesesArr,                  // nuevo: lista completa para archivos multi-mes
+        hashes: Object.keys(nuevas)
+      });
+      store.setArchivos(ARCHIVOS);
+    }
 
     // Detectar bodegas nuevas (sin asignar)
     const bodegasNuevas = new Set();
@@ -1965,18 +2120,21 @@ async function procesarArchivoExcel(file) {
       if (l.bodega && !BODEGAS_MAP[l.bodega]) bodegasNuevas.add(l.bodega);
     });
 
+    const nuevasCount = Object.keys(nuevas).length;
+    const yaCargado = nuevasCount === 0 && dupExactos > 0;
     rEl.innerHTML = `
-      <div class="upload-result" style="border-left:3px solid var(--green);">
-        <div class="r-line"><span>Líneas nuevas cargadas:</span> <b>${Object.keys(nuevas).length}</b></div>
+      <div class="upload-result" style="border-left:3px solid ${yaCargado ? 'var(--amber)' : 'var(--green)'};">
+        ${yaCargado ? `<div class="r-line" style="color:var(--amber);"><b>Este archivo ya estaba cargado.</b> ${dupExactos} líneas existentes · meses: ${mesesArr.map(monthLabel).join(', ') || '—'}.</div>` : ''}
+        <div class="r-line"><span>Líneas nuevas cargadas:</span> <b>${nuevasCount}</b></div>
         <div class="r-line"><span>Duplicados exactos ignorados:</span> <b>${dupExactos}</b></div>
         ${discrepancias.length ? `<div class="r-line" style="color:var(--amber);"><span>⚠ Discrepancias de precio detectadas:</span> <b>${discrepancias.length}</b></div>` : ''}
         ${bodegasNuevas.size ? `<div class="r-line" style="color:var(--red);"><span>⚠ Bodegas nuevas sin asignar:</span> <b>${bodegasNuevas.size}</b> (${Array.from(bodegasNuevas).slice(0,5).join(', ')}${bodegasNuevas.size>5?'…':''})</div>` : ''}
-        <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">Hoja procesada: <b>${hoja}</b> · Meses tocados: <b>${Array.from(mesesTocados).sort().map(monthLabel).join(', ') || '—'}</b></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">Hoja procesada: <b>${hoja}</b> · Meses tocados: <b>${mesesArr.map(monthLabel).join(', ') || '—'}</b></div>
       </div>`;
 
     detectAvailableMonths();
     procesarTodo();
-    toast(`${Object.keys(nuevas).length} líneas cargadas`, 'success');
+    toast(nuevasCount > 0 ? `${nuevasCount} líneas cargadas` : 'Este archivo ya estaba cargado', nuevasCount > 0 ? 'success' : 'warn');
   } catch(e) {
     console.error(e);
     rEl.innerHTML = `<div class="upload-result" style="border-left:3px solid var(--red);"><b>Error al procesar:</b> ${e.message}</div>`;
@@ -2046,12 +2204,13 @@ function setupBackup() {
 
 function descargarRespaldo() {
   const payload = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     compras: COMPRAS,
     bodegas: BODEGAS_MAP,
     tiers: TIERS_MAP,
-    archivos: ARCHIVOS
+    archivos: ARCHIVOS,
+    overrides: OVERRIDES
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -2077,11 +2236,13 @@ async function restaurarRespaldo(file) {
     store.setBodegas(data.bodegas || {});
     store.setTiers(data.tiers || {});
     store.setArchivos(data.archivos || []);
+    store.setOverrides(data.overrides || {});
 
     COMPRAS = store.getCompras();
     BODEGAS_MAP = store.getBodegas();
     TIERS_MAP = store.getTiers();
     ARCHIVOS = store.getArchivos();
+    OVERRIDES = store.getOverrides();
 
     detectAvailableMonths();
     procesarTodo();
@@ -2105,10 +2266,14 @@ function eliminarArchivo(idx) {
       if (hashesDelArchivo.has(k)) delete COMPRAS[k];
     });
   } else {
-    // Fallback: si no hay hashes guardados (archivos viejos), eliminar por mes
-    if (arch.mes) {
+    // Fallback archivos viejos: borrar por sourceFile + lista de meses
+    const mesesArch = arch.meses && arch.meses.length ? arch.meses : (arch.mes ? [arch.mes] : []);
+    if (mesesArch.length) {
+      const mesesSet = new Set(mesesArch);
       Object.keys(COMPRAS).forEach(k => {
-        if (monthKey(COMPRAS[k].fecha) === arch.mes) delete COMPRAS[k];
+        const l = COMPRAS[k];
+        const mismoArchivo = l.sourceFile ? l.sourceFile === arch.nombre : true;
+        if (mismoArchivo && mesesSet.has(monthKey(l.fecha))) delete COMPRAS[k];
       });
     }
   }
