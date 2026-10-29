@@ -1467,7 +1467,7 @@ function showDetail(nombre) {
     <thead><tr>
       <th class="tl">Fecha</th><th class="tl">Bodega</th><th class="tl">OC</th><th class="tl">Código</th>
       <th class="tl">Material</th><th class="tl">Proyecto</th><th class="tl hide-sm">Proveedor</th>
-      <th>Ped</th><th>Comp</th><th>Bolsa</th><th>V.Unit</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
+      <th>Ped</th><th>Comp</th><th>Bolsa unit.</th><th>Bolsa total</th><th>Compra unit.</th><th>Compra total</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
     </tr></thead>
     <tbody>${ord.map(l => {
       const hq = (l.excelHash || '').replace(/'/g, "\\'");
@@ -1487,7 +1487,9 @@ function showDetail(nombre) {
       <td>${l.cantMonday}</td>
       <td>${l.cantExcel}</td>
       <td>${fmt(l.bolsa)}</td>
+      <td>${fmt(l.totalBolsa)}</td>
       <td>${fmt(l.vunit)}</td>
+      <td>${fmt(l.totalCompra)}</td>
       <td>${fmt(l.utilTotal)}</td>
       <td>${pct(l.pctUtil)}</td>
       <td>${commissionBadge(l.pctComis)}</td>
@@ -1495,8 +1497,8 @@ function showDetail(nombre) {
     </tr>`;
     }).join('')}</tbody>
     <tfoot>
-      <tr><td colspan="14">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
-      <tr><td colspan="14">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
+      <tr><td colspan="16">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
+      <tr><td colspan="16">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
     </tfoot>`;
 
   // Faltantes de este comprador (por bodega)
