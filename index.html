@@ -108,6 +108,13 @@
   .btn.danger:hover { background: var(--red); color: #fff; }
   .btn-small { background: var(--card); border: 1px solid var(--line); color: var(--navy); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .btn-small:hover { background: var(--navy); color: #fff; }
+  .tree-grupo, .tree-pedido { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: var(--card); }
+  .tree-pedido { margin: 0 10px 8px 22px; }
+  .tree-grupo > summary, .tree-pedido > summary { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--navy); font-size: 13px; }
+  .tree-grupo > summary { background: var(--paper); border-radius: 8px; }
+  .tree-pedido > .table-wrap { padding: 0 12px 12px; }
+  .tree-meta { margin-left: auto; font-size: 12px; color: var(--ink-soft); font-weight: 400; }
+  .tree-tag { font-size: 11px; background: var(--lime); color: var(--navy); border-radius: 4px; padding: 2px 6px; font-weight: 600; }
 
   table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
   thead th { background: var(--navy); color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px; text-align: right; font-weight: 600; white-space: nowrap; }
@@ -458,7 +465,9 @@ const STORAGE_KEYS = {
   bodegas: 'lutec_bodegas_v1',        // { bodegaNombre: compradorNombre }
   tiers: 'lutec_tiers_v1',            // { compradorNombre: [{hasta,tasa}] }
   archivos: 'lutec_archivos_v1',      // [{ nombre, fecha, lineas, mes }]
-  overrides: 'lutec_overrides_v1'     // { excelHash: { oc, codigo, ts } } — pairing manual sinPedido→Monday
+  overrides: 'lutec_overrides_v1',    // { excelHash: { mondayId | oc+codigo, ts } } — pairing manual sinPedido→Monday
+  manuales: 'lutec_manuales_v1',      // { excelHash: { comprador, bolsa, ts } } — compra sin Monday asignada a mano
+  compradores: 'lutec_compradores_v1' // [nombre] — compradores registrados a mano
 };
 
 function _load(key, def) {
@@ -475,6 +484,11 @@ function _save(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
     return true;
   } catch(e) {
+    // La caché de Monday es descartable: liberar ese espacio antes de fallar al guardar datos reales
+    if (localStorage.getItem('lutec_monday_cache_v1')) {
+      localStorage.removeItem('lutec_monday_cache_v1');
+      return _save(key, val);
+    }
     console.error('Storage save error', key, e);
     toast('Error guardando: espacio agotado en el navegador. Haz respaldo y limpia meses antiguos.', 'error');
     return false;
@@ -492,6 +506,10 @@ const store = {
   setArchivos: (v) => _save(STORAGE_KEYS.archivos, v),
   getOverrides: () => _load(STORAGE_KEYS.overrides, {}),
   setOverrides: (v) => _save(STORAGE_KEYS.overrides, v),
+  getManuales: () => _load(STORAGE_KEYS.manuales, {}),
+  setManuales: (v) => _save(STORAGE_KEYS.manuales, v),
+  getCompradores: () => _load(STORAGE_KEYS.compradores, []),
+  setCompradores: (v) => _save(STORAGE_KEYS.compradores, v),
   // Uso aproximado en bytes
   usage: () => {
     let total = 0;
@@ -511,7 +529,9 @@ let COMPRAS = {};             // datos del Excel (acumulados en localStorage)
 let BODEGAS_MAP = {};         // bodega → comprador
 let TIERS_MAP = {};           // comprador → tiers custom
 let ARCHIVOS = [];            // historial de subidas
-let OVERRIDES = {};           // { excelHash: { oc, codigo, ts } } — pairing manual
+let OVERRIDES = {};           // { excelHash: { mondayId | oc+codigo, ts } } — pairing manual
+let MANUALES = {};            // { excelHash: { comprador, bolsa, ts } }
+let COMPRADORES = [];         // compradores registrados a mano
 
 let currentMonth = '__all__';
 let availableMonths = [];
@@ -591,65 +611,74 @@ function hashLinea(l) {
 /* =============================================================================
    CARGA DE MONDAY
    ============================================================================= */
+const MONDAY_CACHE_KEY = 'lutec_monday_cache_v1';
+
+function cargarEstadoLocal() {
+  COMPRAS = store.getCompras();
+  BODEGAS_MAP = store.getBodegas();
+  TIERS_MAP = store.getTiers();
+  ARCHIVOS = store.getArchivos();
+  OVERRIDES = store.getOverrides();
+  MANUALES = store.getManuales();
+  COMPRADORES = store.getCompradores();
+}
+
+function pintar(sub) {
+  detectAvailableMonths();
+  procesarTodo();
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+  // Si Monday termina de actualizar mientras se ve el detalle de un comprador, quedarse ahí
+  if (currentBuyerName && CROSSED.porComprador[currentBuyerName]) {
+    const y = window.scrollY;
+    showDetail(currentBuyerName);
+    window.scrollTo(0, y);
+  } else {
+    if (currentBuyerName) showDashboard();
+    document.getElementById('viewSub').textContent = sub;
+  }
+}
+
+// Pinta de inmediato con lo guardado (Excel + último Monday conocido) y luego actualiza Monday:
+// el webhook tarda ~45 s y antes el dashboard quedaba oculto todo ese tiempo, o del todo si fallaba.
 async function cargarMonday(isReload=false) {
   const btn = document.getElementById('reloadBtn');
   if (isReload) btn.classList.add('spinning');
 
-  document.getElementById('loadingState').style.display = 'block';
-  document.getElementById('errorState').style.display = 'none';
-  document.getElementById('content').style.display = 'none';
+  cargarEstadoLocal();
+  if (!MATERIALES_MONDAY.length) MATERIALES_MONDAY = _load(MONDAY_CACHE_KEY, []);
+  const resumen = () => `Monday: ${MATERIALES_MONDAY.length} materiales · Excel: ${Object.keys(COMPRAS).length} líneas de compra cargadas`;
+  const hayAlgo = MATERIALES_MONDAY.length || Object.keys(COMPRAS).length;
+
+  if (hayAlgo) {
+    pintar(resumen() + ' · actualizando Monday…');
+  } else {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('errorState').style.display = 'none';
+    document.getElementById('content').style.display = 'none';
+  }
 
   try {
     const res = await fetch(API_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    MATERIALES_MONDAY = Array.isArray(json.materiales) ? json.materiales : [];
+    try { localStorage.setItem(MONDAY_CACHE_KEY, JSON.stringify(MATERIALES_MONDAY)); } catch(e) { /* caché opcional: si no cabe, no pasa nada */ }
 
-    // Compatibilidad: aceptamos tanto { materiales: [...] } (nuevo) como { compradores: [...] } (viejo)
-    if (Array.isArray(json.materiales)) {
-      MATERIALES_MONDAY = json.materiales;
-    } else if (Array.isArray(json.compradores)) {
-      // conversión de emergencia si el n8n viejo aún está activo
-      MATERIALES_MONDAY = [];
-      json.compradores.forEach(c => {
-        (c.lineas || []).forEach(l => {
-          MATERIALES_MONDAY.push({
-            codigo: l.codigo || '', oc: '', bolsa: l.bolsa || 0, cantidad: l.cant || 0,
-            descripcion: l.desc || '', proveedor: l.tercero || '',
-            unidad: l.und || 'UND', logistico: c.nombre || '', fecha: l.fecha || ''
-          });
-        });
-      });
-      toast('n8n aún envía formato viejo. Actualiza el nodo Code para usar el match por OC.', 'warn');
-    } else {
-      MATERIALES_MONDAY = [];
-    }
-
-    // Cargar estado local
-    COMPRAS = store.getCompras();
-    BODEGAS_MAP = store.getBodegas();
-    TIERS_MAP = store.getTiers();
-    ARCHIVOS = store.getArchivos();
-    OVERRIDES = store.getOverrides();
-
-    detectAvailableMonths();
-    procesarTodo();
-
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    const totMat = MATERIALES_MONDAY.length;
-    const totCom = Object.keys(COMPRAS).length;
-    document.getElementById('viewSub').textContent = `Monday: ${totMat} materiales · Excel: ${totCom} líneas de compra cargadas`;
-
-    const now = new Date();
-    document.getElementById('updatedAt').textContent = 'Actualizado ' + now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
-
+    pintar(resumen());
+    document.getElementById('updatedAt').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
     if (isReload) toast('Datos de Monday actualizados', 'success');
   } catch(e) {
     console.error(e);
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('viewSub').textContent = 'Error de conexión con Monday';
-    if (isReload) toast('Error al recargar', 'error');
+    if (hayAlgo) {
+      pintar(resumen() + ' · sin conexión con Monday, mostrando los últimos datos conocidos');
+      toast('No se pudo actualizar Monday', 'error');
+    } else {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('viewSub').textContent = 'Error de conexión con Monday';
+    }
   } finally {
     setTimeout(() => btn.classList.remove('spinning'), 400);
   }
@@ -736,7 +765,7 @@ function comprasDelMes() {
 function indexarMonday() {
   const idx = {};
   MATERIALES_MONDAY.forEach(m => {
-    if (!m.oc || !m.codigo) return; // Monday sin OC/código no participa del match
+    if (m.soloEmparejar || !m.oc || !m.codigo) return; // sin OC/código (o tablero de agosto) no participa del match automático
     const k = keyOCCod(m.oc, m.codigo);
     if (!idx[k]) idx[k] = [];
     idx[k].push(m);
@@ -756,23 +785,28 @@ function procesarTodo() {
   // 1. Recorrer compras del Excel
   compras.forEach(c => {
     const k = keyOCCod(c.oc, c.codigo);
+    const h = hashLinea(c);
     let matches = idxMonday[k];
-    let viaOverride = false;
+    let via = '';
 
-    // Fallback: pairing manual guardado
-    if ((!matches || matches.length === 0) && OVERRIDES[hashLinea(c)]) {
-      const o = OVERRIDES[hashLinea(c)];
-      matches = idxMonday[keyOCCod(o.oc, o.codigo)];
-      if (matches && matches.length) viaOverride = true;
+    // Fallback 1: emparejamiento manual con un ítem de Monday (por id, o por OC+código en registros viejos)
+    if (!matches?.length && OVERRIDES[h]) {
+      const o = OVERRIDES[h];
+      matches = o.mondayId
+        ? MATERIALES_MONDAY.filter(m => String(m.id) === String(o.mondayId))
+        : idxMonday[keyOCCod(o.oc, o.codigo)];
+      if (matches?.length) via = 'override';
     }
 
-    if (!matches || matches.length === 0) {
-      // No hay pedido en Monday para esta compra
-      sinPedido.push({
-        ...c,
-        hash: hashLinea(c),
-        comprador: compradorPorBodega(c.bodega)
-      });
+    // Fallback 2: asignación manual a un comprador con bolsa escrita a mano
+    if (!matches?.length && MANUALES[h]) {
+      const mn = MANUALES[h];
+      matches = [{ bolsa: mn.bolsa, cantidad: c.cant, logistico: mn.comprador, descripcion: c.descripcion, unidad: c.unidad }];
+      via = 'manual';
+    }
+
+    if (!matches?.length) {
+      sinPedido.push({ ...c, hash: h, comprador: compradorPorBodega(c.bodega) });
       return;
     }
 
@@ -800,7 +834,7 @@ function procesarTodo() {
     const totalBolsa = bolsa * cant;
     const utilTotal = totalBolsa - totalCompra;
     const pctUtil = bolsa > 0 ? ((bolsa - vunit) / bolsa) * 100 : 0;
-    const comprador = compradorPorBodega(c.bodega, monday.logistico);
+    const comprador = via === 'manual' ? MANUALES[h].comprador : compradorPorBodega(c.bodega, monday.logistico);
 
     lineasComision.push({
       fecha: c.fecha,
@@ -821,8 +855,13 @@ function procesarTodo() {
       comprador,
       logistico: monday.logistico,
       mondayId: monday.id,
-      excelHash: hashLinea(c),
-      viaOverride
+      pedido: monday.pedido || '',
+      proyecto: monday.proyecto || '',
+      grupo: monday.grupo || '',
+      tablero: monday.tablero || '',
+      excelHash: h,
+      viaOverride: via === 'override',
+      viaManual: via === 'manual'
     });
   });
 
@@ -835,8 +874,9 @@ function procesarTodo() {
   });
 
   const pendientes = [];
+  const datosPedido = m => ({ pedido: m.pedido || '', proyecto: m.proyecto || '', grupo: m.grupo || '' });
   MATERIALES_MONDAY.forEach(m => {
-    if (!m.oc || !m.codigo) return;
+    if (m.soloEmparejar || !m.oc || !m.codigo) return;
     const k = keyOCCod(m.oc, m.codigo);
     const compradoTotal = sumaPorKey[k] || 0;
     const faltante = (m.cantidad || 0) - compradoTotal;
@@ -850,13 +890,14 @@ function procesarTodo() {
         cantComprada: compradoTotal,
         cantFaltante: faltante,
         logistico: m.logistico,
-        proveedor: m.proveedor
+        proveedor: m.proveedor,
+        ...datosPedido(m)
       });
     }
   });
 
   // 3. Materiales de Monday sin OC/código (no pueden hacer match)
-  const mondaySinOC = MATERIALES_MONDAY.filter(m => !m.oc || !m.codigo);
+  const mondaySinOC = MATERIALES_MONDAY.filter(m => !m.soloEmparejar && (!m.oc || !m.codigo));
   mondaySinOC.forEach(m => {
     pendientes.push({
       oc: normOC(m.oc) || '—',
@@ -868,7 +909,8 @@ function procesarTodo() {
       cantFaltante: m.cantidad,
       logistico: m.logistico,
       proveedor: m.proveedor,
-      sinDatos: true
+      sinDatos: true,
+      ...datosPedido(m)
     });
   });
 
@@ -1231,26 +1273,43 @@ function renderExtras() {
   if (P.length === 0) {
     bp.innerHTML = `<div class="empty-msg">Todo lo pedido en Monday se ha comprado en este periodo.</div>`;
   } else {
+    // Árbol Grupo → Pedido → Subitems (mismo orden que en Monday)
+    const arbol = {};
+    P.forEach(p => {
+      const g = p.grupo || 'Sin grupo';
+      const pe = p.pedido || 'Sin pedido';
+      ((arbol[g] ||= {})[pe] ||= []).push(p);
+    });
+    const bolsaDe = arr => arr.reduce((s, p) => s + (p.bolsa || 0) * (p.cantFaltante || 0), 0);
     bp.innerHTML = `
       <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
         Materiales pedidos en Monday que aún no se han comprado (o se han comprado parcialmente). Valor pendiente estimado: <b>${fmt(totalBolsaPendiente)}</b>
       </div>
-      <div class="table-wrap"><table>
-        <thead><tr>
-          <th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th>
-          <th>Cant. pedida</th><th>Comprada</th><th>Faltante</th><th>Bolsa</th><th class="tl">Logístico</th>
-        </tr></thead>
-        <tbody>${P.map(p => `<tr>
-          <td class="tl">${p.oc}</td>
-          <td class="tl">${p.codigo}</td>
-          <td class="tl desc">${p.descripcion || '—'}</td>
-          <td>${p.cantPedida}</td>
-          <td>${p.cantComprada}</td>
-          <td><b>${p.cantFaltante}</b></td>
-          <td>${fmt(p.bolsa)}</td>
-          <td class="tl">${p.logistico || '—'}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
+      ${Object.entries(arbol).map(([grupo, pedidos]) => {
+        const todos = Object.values(pedidos).flat();
+        return `<details class="tree-grupo">
+          <summary><b>${grupo}</b><span class="tree-meta">${Object.keys(pedidos).length} pedidos · ${todos.length} materiales · ${fmt(bolsaDe(todos))}</span></summary>
+          ${Object.entries(pedidos).map(([pedido, items]) => `<details class="tree-pedido">
+            <summary>${pedido}${items[0].proyecto ? `<span class="tree-tag">${items[0].proyecto}</span>` : ''}<span class="tree-meta">${items.length} materiales · ${fmt(bolsaDe(items))}</span></summary>
+            <div class="table-wrap"><table>
+              <thead><tr>
+                <th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th>
+                <th>Pedida</th><th>Comprada</th><th>Faltante</th><th>Bolsa</th><th class="tl">Logístico</th>
+              </tr></thead>
+              <tbody>${items.map(p => `<tr>
+                <td class="tl">${p.oc}</td>
+                <td class="tl">${p.codigo}</td>
+                <td class="tl desc">${p.descripcion || '—'}</td>
+                <td>${p.cantPedida}</td>
+                <td>${p.cantComprada}</td>
+                <td><b>${p.cantFaltante}</b></td>
+                <td>${fmt(p.bolsa)}</td>
+                <td class="tl">${p.logistico || '—'}</td>
+              </tr>`).join('')}</tbody>
+            </table></div>
+          </details>`).join('')}
+        </details>`;
+      }).join('')}`;
   }
 
   // Sin pedido
@@ -1260,7 +1319,7 @@ function renderExtras() {
   } else {
     bs.innerHTML = `
       <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">
-        Líneas del Excel que no encontraron un pedido en Monday. Usa <b>Emparejar</b> si sabes a qué pedido corresponde. Valor total: <b>${fmt(totalValorSinPedido)}</b>
+        Líneas del Excel que no encontraron un pedido en Monday. Usa <b>Emparejar</b> si está en un pedido de Monday (incluye el tablero de agosto) o <b>Asignar</b> para atribuirla a un comprador escribiendo la bolsa. Valor total: <b>${fmt(totalValorSinPedido)}</b>
       </div>
       <div class="table-wrap"><table>
         <thead><tr>
@@ -1277,7 +1336,10 @@ function renderExtras() {
           <td>${l.cant}</td>
           <td>${fmt(l.valorUnitario)}</td>
           <td>${fmt(l.valorUnitario * l.cant)}</td>
-          <td><button class="btn-small" onclick="openPairModal('${(l.hash || '').replace(/'/g,"\\'")}')">Emparejar</button></td>
+          <td style="white-space:nowrap;">
+            <button class="btn-small" onclick="openPairModal('${(l.hash || '').replace(/'/g,"\\'")}')">Emparejar</button>
+            <button class="btn-small" onclick="openAsignarModal('${(l.hash || '').replace(/'/g,"\\'")}')">Asignar</button>
+          </td>
         </tr>`).join('')}</tbody>
       </table></div>`;
   }
@@ -1404,15 +1466,23 @@ function showDetail(nombre) {
   document.getElementById('detailTable').innerHTML = `
     <thead><tr>
       <th class="tl">Fecha</th><th class="tl">Bodega</th><th class="tl">OC</th><th class="tl">Código</th>
-      <th class="tl">Material</th><th class="tl hide-sm">Proveedor</th>
+      <th class="tl">Material</th><th class="tl">Proyecto</th><th class="tl hide-sm">Proveedor</th>
       <th>Ped</th><th>Comp</th><th>Bolsa</th><th>V.Unit</th><th>Utilidad</th><th>% Util</th><th>Comis</th><th>Valor</th>
     </tr></thead>
-    <tbody>${ord.map(l => `<tr>
-      <td class="tl">${fmtFecha(l.fecha)}${l.viaOverride ? ` <span title="Emparejado manualmente — click para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoPair('${(l.excelHash||'').replace(/'/g,"\\'")}')">⇄</span>` : ''}</td>
+    <tbody>${ord.map(l => {
+      const hq = (l.excelHash || '').replace(/'/g, "\\'");
+      const marca = l.viaOverride
+        ? ` <span title="Emparejado manualmente — clic para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoPair('${hq}')">⇄</span>`
+        : l.viaManual
+        ? ` <span title="Asignado a mano con bolsa escrita — clic para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoAsignar('${hq}')">✎</span>`
+        : '';
+      return `<tr>
+      <td class="tl">${fmtFecha(l.fecha)}${marca}</td>
       <td class="tl">${l.bodega || '—'}</td>
-      <td class="tl">${l.oc}</td>
-      <td class="tl">${l.codigo}</td>
+      <td class="tl">${l.oc || '—'}</td>
+      <td class="tl">${l.codigo || '—'}</td>
       <td class="tl desc">${l.descripcion || '—'}</td>
+      <td class="tl" title="${(l.pedido || '').replace(/"/g, '&quot;')}">${l.proyecto || (l.viaManual ? 'Sin Monday' : '—')}</td>
       <td class="tl terc hide-sm">${l.tercero || '—'}</td>
       <td>${l.cantMonday}</td>
       <td>${l.cantExcel}</td>
@@ -1422,10 +1492,11 @@ function showDetail(nombre) {
       <td>${pct(l.pctUtil)}</td>
       <td>${commissionBadge(l.pctComis)}</td>
       <td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
-    </tr>`).join('')}</tbody>
+    </tr>`;
+    }).join('')}</tbody>
     <tfoot>
-      <tr><td colspan="13">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
-      <tr><td colspan="13">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
+      <tr><td colspan="14">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
+      <tr><td colspan="14">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
     </tfoot>`;
 
   // Faltantes de este comprador (por bodega)
@@ -1595,6 +1666,7 @@ function openModal(kind) {
   else if (kind === 'upload') mc.innerHTML = renderUploadModal();
   else if (kind === 'backup') mc.innerHTML = renderBackupModal();
   else if (kind === 'pair') mc.innerHTML = renderPairModal();
+  else if (kind === 'asignar') mc.innerHTML = renderAsignarModal();
   bd.classList.add('show');
   // handlers post-render
   if (kind === 'upload') setupUpload();
@@ -1622,16 +1694,7 @@ function renderPairModal() {
     return `<div class="modal-head"><h2>Emparejar manualmente</h2><button class="modal-close" onclick="closeModal()">×</button></div>
       <div style="padding:20px;color:var(--red);">No se encontró la línea del Excel. Recarga la página.</div>`;
   }
-  // Universo de Monday candidatos: todos los items (no sólo "pendientes") con oc+codigo
-  const candidatos = MATERIALES_MONDAY.filter(m => m.oc || m.codigo).map(m => ({
-    oc: normOC(m.oc) || '—',
-    codigo: normCod(m.codigo) || '—',
-    descripcion: m.descripcion || '',
-    bolsa: m.bolsa || 0,
-    cantidad: m.cantidad || 0,
-    logistico: m.logistico || '',
-    proveedor: m.proveedor || ''
-  }));
+  const candidatos = candidatosPair(excelRow);
   return `
     <div class="modal-head">
       <h2>Emparejar línea de Excel con Monday</h2>
@@ -1650,6 +1713,34 @@ function renderPairModal() {
     </div>`;
 }
 
+// Palabras significativas (sin tildes, ≥3 letras) para comparar descripciones
+function palabras(s) {
+  return new Set(String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase()
+    .split(/[^A-Z0-9]+/).filter(w => w.length >= 3));
+}
+
+// Todos los ítems de Monday (incluido el tablero de agosto), los más parecidos a la línea del Excel primero
+function candidatosPair(excelRow) {
+  const base = palabras(excelRow.descripcion);
+  return MATERIALES_MONDAY.filter(m => m.id).map(m => {
+    const w = palabras(m.descripcion);
+    let comunes = 0;
+    base.forEach(x => { if (w.has(x)) comunes++; });
+    return {
+      id: String(m.id),
+      oc: normOC(m.oc) || '—',
+      codigo: normCod(m.codigo) || '—',
+      descripcion: m.descripcion || '',
+      bolsa: m.bolsa || 0,
+      cantidad: m.cantidad || 0,
+      logistico: m.logistico || '',
+      pedido: m.pedido || '',
+      agosto: !!m.soloEmparejar,
+      score: base.size ? comunes / base.size : 0
+    };
+  }).sort((a, b) => b.score - a.score);
+}
+
 function renderPairRows(items) {
   if (items.length === 0) return `<div class="empty-msg">Sin resultados.</div>`;
   return `<div class="table-wrap"><table>
@@ -1657,11 +1748,11 @@ function renderPairRows(items) {
     <tbody>${items.slice(0, 200).map(c => `<tr>
       <td class="tl">${c.oc}</td>
       <td class="tl">${c.codigo}</td>
-      <td class="tl desc">${c.descripcion || '—'}</td>
+      <td class="tl desc">${c.agosto ? '<span class="tree-tag">Agosto</span> ' : ''}${c.descripcion || '—'}<div style="font-size:11px;color:var(--ink-soft);">${c.pedido}</div></td>
       <td>${fmt(c.bolsa)}</td>
       <td>${c.cantidad}</td>
       <td class="tl">${c.logistico || '—'}</td>
-      <td><button class="btn-small" onclick="confirmPair('${c.oc.replace(/'/g,"\\'")}','${c.codigo.replace(/'/g,"\\'")}')">Emparejar</button></td>
+      <td><button class="btn-small" onclick="confirmPair('${c.id}')">Emparejar</button></td>
     </tr>`).join('')}${items.length > 200 ? `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${items.length - 200} más. Usa el buscador.</td></tr>` : ''}</tbody>
   </table></div>`;
 }
@@ -1669,36 +1760,28 @@ function renderPairRows(items) {
 function setupPair() {
   const inp = document.getElementById('pairSearch');
   if (!inp) return;
-  const todos = MATERIALES_MONDAY.filter(m => m.oc || m.codigo).map(m => ({
-    oc: normOC(m.oc) || '—',
-    codigo: normCod(m.codigo) || '—',
-    descripcion: m.descripcion || '',
-    bolsa: m.bolsa || 0,
-    cantidad: m.cantidad || 0,
-    logistico: m.logistico || '',
-    proveedor: m.proveedor || ''
-  }));
+  const excelRow = CROSSED.sinPedido.find(l => l.hash === pairingHash);
+  if (!excelRow) return;
+  const todos = candidatosPair(excelRow);
   inp.addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
     const filtered = !q ? todos : todos.filter(c =>
-      c.oc.toLowerCase().includes(q) ||
-      c.codigo.toLowerCase().includes(q) ||
-      c.descripcion.toLowerCase().includes(q) ||
-      c.logistico.toLowerCase().includes(q)
+      [c.oc, c.codigo, c.descripcion, c.logistico, c.pedido].some(v => v.toLowerCase().includes(q))
     );
     document.getElementById('pairList').innerHTML = renderPairRows(filtered);
   });
   inp.focus();
 }
 
-function confirmPair(oc, codigo) {
+function confirmPair(mondayId) {
   if (!pairingHash) return;
-  OVERRIDES[pairingHash] = { oc, codigo, ts: new Date().toISOString() };
+  const m = MATERIALES_MONDAY.find(x => String(x.id) === String(mondayId));
+  OVERRIDES[pairingHash] = { mondayId: String(mondayId), ts: new Date().toISOString() };
   store.setOverrides(OVERRIDES);
   pairingHash = null;
   closeModal();
   procesarTodo();
-  toast(`Línea emparejada con OC ${oc} · ${codigo}`, 'success');
+  toast(`Línea emparejada con "${m ? m.descripcion : mondayId}"`, 'success');
 }
 
 function undoPair(hash) {
@@ -1708,6 +1791,75 @@ function undoPair(hash) {
   procesarTodo();
   if (currentBuyerName) showDetail(currentBuyerName);
   toast('Emparejamiento manual deshecho', 'success');
+}
+
+/* --------- Asignar a mano (compra sin pedido en Monday → comprador + bolsa) --------- */
+let asignarHash = null;
+
+function openAsignarModal(hash) {
+  asignarHash = hash;
+  openModal('asignar');
+}
+
+function renderAsignarModal() {
+  const l = CROSSED.sinPedido.find(x => x.hash === asignarHash);
+  const head = `<div class="modal-head"><h2>Asignar compra a un comprador</h2><button class="modal-close" onclick="closeModal()">×</button></div>`;
+  if (!l) return head + `<div style="padding:20px;color:var(--red);">No se encontró la línea del Excel. Recarga la página.</div>`;
+  const opts = getAllCompradores().map(c => `<option${c === l.comprador ? ' selected' : ''}>${c}</option>`).join('');
+  return head + `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper);">
+      <div style="font-size:13px;"><b>OC ${normOC(l.oc) || '—'} · Código ${normCod(l.codigo) || '—'}</b></div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">${l.descripcion || '—'} · ${l.bodega || '—'} · ${l.cant} × ${fmt(l.valorUnitario)}</div>
+    </div>
+    <div style="padding:16px 20px;display:grid;gap:14px;font-size:13px;">
+      <label style="display:grid;gap:6px;">Comprador
+        <select id="asigComprador" style="padding:8px 10px;border:1px solid var(--line);border-radius:6px;">
+          ${opts}<option value="__nuevo__">+ Nuevo comprador…</option>
+        </select>
+      </label>
+      <label style="display:grid;gap:6px;">Bolsa unitaria (presupuesto por unidad)
+        <input id="asigBolsa" type="number" min="0" step="any" placeholder="Ej: ${Math.round(l.valorUnitario * 1.2)}" style="padding:8px 10px;border:1px solid var(--line);border-radius:6px;">
+      </label>
+      <div style="color:var(--ink-soft);font-size:12px;">La comisión se calcula con los escalones del comprador, comparando esta bolsa contra el precio de compra (${fmt(l.valorUnitario)}).</div>
+      <div><button class="btn accent" onclick="confirmAsignar()">Asignar</button></div>
+    </div>`;
+}
+
+function confirmAsignar() {
+  if (!asignarHash) return;
+  let comprador = document.getElementById('asigComprador').value;
+  if (comprador === '__nuevo__') {
+    comprador = registrarComprador(prompt('Nombre del nuevo comprador:'));
+    if (!comprador) return;
+  }
+  const bolsa = parseFloat(document.getElementById('asigBolsa').value);
+  if (!(bolsa > 0)) { toast('Escribe la bolsa unitaria', 'error'); return; }
+  MANUALES[asignarHash] = { comprador, bolsa, ts: new Date().toISOString() };
+  store.setManuales(MANUALES);
+  asignarHash = null;
+  closeModal();
+  procesarTodo();
+  toast(`Compra asignada a ${comprador}`, 'success');
+}
+
+function undoAsignar(hash) {
+  if (!MANUALES[hash]) return;
+  delete MANUALES[hash];
+  store.setManuales(MANUALES);
+  procesarTodo();
+  if (currentBuyerName) showDetail(currentBuyerName);
+  toast('Asignación manual deshecha', 'success');
+}
+
+// Registra un comprador nuevo y devuelve su nombre (o null si se canceló)
+function registrarComprador(nombre) {
+  const n = (nombre || '').trim();
+  if (!n) return null;
+  if (!getAllCompradores().includes(n)) {
+    COMPRADORES.push(n);
+    store.setCompradores(COMPRADORES);
+  }
+  return n;
 }
 
 /* --------- Modal: Configuración --------- */
@@ -1739,6 +1891,8 @@ function getAllCompradores() {
   MATERIALES_MONDAY.forEach(m => { if (m.logistico) set.add(m.logistico); });
   Object.values(BODEGAS_MAP).forEach(c => { if (c) set.add(c); });
   Object.keys(TIERS_MAP).forEach(n => set.add(n));
+  COMPRADORES.forEach(n => set.add(n));
+  Object.values(MANUALES).forEach(m => set.add(m.comprador));
   return Array.from(set).sort();
 }
 
@@ -1757,7 +1911,8 @@ function renderBodegasTab() {
   Object.values(COMPRAS).forEach(c => { if (c.bodega) conteos[c.bodega] = (conteos[c.bodega]||0) + 1; });
 
   if (bodegas.length === 0) {
-    return `<div class="empty-msg">Aún no hay bodegas registradas. Sube un Excel de compras para verlas aquí.</div>`;
+    return `<div class="empty-msg">Aún no hay bodegas registradas. Sube un Excel de compras para verlas aquí.</div>
+      <div style="margin-top:14px;text-align:right;"><button class="btn" onclick="addComprador()">+ Nuevo comprador</button></div>`;
   }
 
   const optionsHtml = ['<option value="">— Sin asignar —</option>', ...compradores.map(c => `<option value="${c}">${c}</option>`)].join('');
@@ -1849,20 +2004,8 @@ function resetTierInConfig(nombre) {
 }
 
 function addComprador() {
-  const nombre = prompt('Nombre del nuevo comprador:');
-  if (!nombre) return;
-  const n = nombre.trim();
+  const n = registrarComprador(prompt('Nombre del nuevo comprador:'));
   if (!n) return;
-  // Lo agregamos garantizando que aparezca en el listado (creamos entrada vacía en tiers)
-  if (!TIERS_MAP[n]) {
-    // no forzamos tiers custom; solo lo "registramos" con una asignación temporal
-    // Truco: lo agregamos como opción al re-renderizar
-  }
-  // rerender: para que aparezca en el dropdown, lo metemos en una lista efímera
-  // (más simple: lo asignamos como comprador de una bodega si el usuario luego lo hace)
-  // Aquí simplemente guardamos un tier default para "registrarlo"
-  TIERS_MAP[n] = JSON.parse(JSON.stringify(TIERS_DEFAULT));
-  store.setTiers(TIERS_MAP);
   document.getElementById('tabBodegas').innerHTML = renderBodegasTab();
   document.getElementById('tabTiers').innerHTML = renderTiersTab();
   toast(`Comprador "${n}" registrado. Asígnale bodegas.`, 'success');
@@ -2210,7 +2353,9 @@ function descargarRespaldo() {
     bodegas: BODEGAS_MAP,
     tiers: TIERS_MAP,
     archivos: ARCHIVOS,
-    overrides: OVERRIDES
+    overrides: OVERRIDES,
+    manuales: MANUALES,
+    compradores: COMPRADORES
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -2237,12 +2382,16 @@ async function restaurarRespaldo(file) {
     store.setTiers(data.tiers || {});
     store.setArchivos(data.archivos || []);
     store.setOverrides(data.overrides || {});
+    store.setManuales(data.manuales || {});
+    store.setCompradores(data.compradores || []);
 
     COMPRAS = store.getCompras();
     BODEGAS_MAP = store.getBodegas();
     TIERS_MAP = store.getTiers();
     ARCHIVOS = store.getArchivos();
     OVERRIDES = store.getOverrides();
+    MANUALES = store.getManuales();
+    COMPRADORES = store.getCompradores();
 
     detectAvailableMonths();
     procesarTodo();
