@@ -6,6 +6,7 @@
 <title>Comisiones · LUTEC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -271,9 +272,10 @@
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <div class="logo">LU<span>TEC</span></div>
-    <div class="login-sub">Ingrese la contraseña para acceder</div>
-    <form onsubmit="return handleLogin(event)">
-      <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password">
+    <div class="login-sub">Ingrese su correo y contraseña</div>
+    <form onsubmit="handleLogin(event)">
+      <input type="email" id="loginEmail" placeholder="Correo" autocomplete="username" required>
+      <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" required>
       <button type="submit" class="login-btn">Ingresar</button>
     </form>
     <div class="login-err" id="loginErr"></div>
@@ -288,7 +290,7 @@
     <button class="top-btn" onclick="openModal('config')"><span class="ic">⚙</span> Configurar</button>
     <button class="top-btn" onclick="openModal('upload')"><span class="ic">↑</span> Subir Excel</button>
     <button class="top-btn" onclick="openModal('backup')"><span class="ic">💾</span> Respaldo</button>
-    <button class="top-btn" id="reloadBtn" onclick="cargarMonday(true)"><span class="ic">↻</span> Recargar</button>
+    <button class="top-btn" id="reloadBtn" onclick="recargar()"><span class="ic">↻</span> Recargar</button>
     <button class="top-btn primary" onclick="exportarExcelCompleto()"><span class="ic">↓</span> Excel</button>
   </div>
 </div>
@@ -393,53 +395,116 @@
 'use strict';
 
 /* =============================================================================
-   AUTENTICACIÓN
+   AUTENTICACIÓN Y BASE COMPARTIDA (Supabase)
+   La anon key es pública por diseño: los datos los protegen el login y las
+   políticas RLS de las tablas (solo usuarios autenticados).
    ============================================================================= */
-const AUTH_HASH = '0986b36150ba8716a4ce5b1f0f0b3075eeedb34429cc27b3077c8fcc945ee734';
-const AUTH_KEY = 'lutec_auth_session';
+const SUPABASE_URL = 'https://fyclsjhgednamsvkfoim.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Y2xzamhnZWRuYW1zdmtmb2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMzcxMzgsImV4cCI6MjEwODgxMzEzOH0.91hDEpTkfmIxqVP_EkLFCMii0MmlUmEI5WA812Z6aek';
+// sessionStorage: la sesión se cierra al cerrar el navegador
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: sessionStorage } });
+const EMAIL_KEY = 'lutec_login_email';
 
-function sha256(str) {
-  function rr(n,x){return(x>>>n)|(x<<(32-n));}
-  const k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
-  let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
-  const enc=new TextEncoder().encode(str);const bl=enc.length*8;
-  const pad=new Uint8Array(((enc.length+9+63)&~63));pad.set(enc);pad[enc.length]=0x80;
-  const dv=new DataView(pad.buffer);dv.setUint32(pad.length-4,bl);
-  for(let o=0;o<pad.length;o+=64){
-    const w=new Int32Array(64);
-    for(let i=0;i<16;i++)w[i]=dv.getInt32(o+i*4);
-    for(let i=16;i<64;i++){const s0=rr(7,w[i-15])^rr(18,w[i-15])^(w[i-15]>>>3);const s1=rr(17,w[i-2])^rr(19,w[i-2])^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)|0;}
-    let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
-    for(let i=0;i<64;i++){const S1=rr(6,e)^rr(11,e)^rr(25,e);const ch=(e&f)^(~e&g);const t1=(h+S1+ch+k[i]+w[i])|0;const S0=rr(2,a)^rr(13,a)^rr(22,a);const maj=(a&b)^(a&c)^(b&c);const t2=(S0+maj)|0;h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;}
-    h0=(h0+a)|0;h1=(h1+b)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;h5=(h5+f)|0;h6=(h6+g)|0;h7=(h7+h)|0;
-  }
-  return [h0,h1,h2,h3,h4,h5,h6,h7].map(v=>(v>>>0).toString(16).padStart(8,'0')).join('');
-}
-
-function isAuthenticated() {
-  try { return sessionStorage.getItem(AUTH_KEY) === AUTH_HASH; } catch(e) { return false; }
-}
-
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
-  const pass = document.getElementById('loginPass').value;
-  const hash = sha256(pass);
-  if (hash === AUTH_HASH) {
-    try { sessionStorage.setItem(AUTH_KEY, AUTH_HASH); } catch(e) {}
-    document.getElementById('loginOverlay').classList.add('hidden');
-    cargarMonday();
-  } else {
-    document.getElementById('loginErr').textContent = 'Contraseña incorrecta';
-    document.getElementById('loginPass').value = '';
+  const errEl = document.getElementById('loginErr');
+  const email = document.getElementById('loginEmail').value.trim();
+  errEl.textContent = 'Ingresando…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: document.getElementById('loginPass').value });
+  document.getElementById('loginPass').value = '';
+  if (error) {
+    errEl.textContent = /invalid/i.test(error.message) ? 'Correo o contraseña incorrectos' : error.message;
+    return;
   }
-  return false;
+  errEl.textContent = '';
+  try { localStorage.setItem(EMAIL_KEY, email); } catch(e) {}
+  iniciar();
+}
+
+async function iniciar() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  await sincronizarDesdeNube();
+  cargarMonday();
+}
+
+async function recargar() {
+  await sincronizarDesdeNube();
+  cargarMonday(true);
+}
+
+const ESTADO_DEFAULTS = { bodegas: {}, tiers: {}, archivos: [], overrides: {}, manuales: {}, compradores: [] };
+let EN_NUBE = new Set();   // hashes de compras confirmados en la nube
+let avisoNubeMostrado = false;
+
+function falloNube(err) {
+  console.error('Supabase', err);
+  if (avisoNubeMostrado) return;
+  avisoNubeMostrado = true;
+  toast('No se pudo guardar en la base compartida: el cambio quedó solo en este computador', 'error');
+  setTimeout(() => { avisoNubeMostrado = false; }, 10000);
+}
+
+async function leerNube() {
+  const compras = {};
+  for (let desde = 0; ; desde += 1000) {   // Supabase devuelve máximo 1000 filas por consulta
+    const { data, error } = await sb.from('compras').select('hash,data').range(desde, desde + 999);
+    if (error) throw error;
+    data.forEach(f => { compras[f.hash] = f.data; });
+    if (data.length < 1000) break;
+  }
+  const { data: estado, error } = await sb.from('estado').select('clave,valor');
+  if (error) throw error;
+  return { compras, estado };
+}
+
+// La nube es la fuente de verdad; localStorage queda como caché de este computador
+async function sincronizarDesdeNube() {
+  try {
+    const { compras, estado } = await leerNube();
+    if (!Object.keys(compras).length && !estado.length) {
+      const locales = Object.keys(_load(STORAGE_KEYS.compras, {})).length;
+      if (locales && confirm(`La base compartida está vacía. ¿Subir las ${locales} líneas de compra y la configuración de este computador para que se vean desde los demás?`)) {
+        await subirTodoALaNube();
+      }
+      return;
+    }
+    _save(STORAGE_KEYS.compras, compras);
+    EN_NUBE = new Set(Object.keys(compras));
+    const porClave = Object.fromEntries(estado.map(e => [e.clave, e.valor]));
+    Object.keys(ESTADO_DEFAULTS).forEach(k => _save(STORAGE_KEYS[k], porClave[k] ?? ESTADO_DEFAULTS[k]));
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo leer la base compartida; se muestran los datos de este computador', 'error');
+  }
+}
+
+// Sube solo la diferencia contra lo que ya está en la nube: así dos computadores que cargan archivos distintos se suman
+function subirCompras(todas) {
+  const nuevas = Object.keys(todas).filter(h => !EN_NUBE.has(h));
+  const borradas = [...EN_NUBE].filter(h => !(h in todas));
+  const ops = [];
+  for (let i = 0; i < nuevas.length; i += 500) {
+    const lote = nuevas.slice(i, i + 500);
+    ops.push(sb.from('compras').upsert(lote.map(h => ({ hash: h, data: todas[h] })))
+      .then(r => r.error ? falloNube(r.error) : lote.forEach(h => EN_NUBE.add(h))));
+  }
+  for (let i = 0; i < borradas.length; i += 50) {
+    const lote = borradas.slice(i, i + 50);
+    ops.push(sb.from('compras').delete().in('hash', lote)
+      .then(r => r.error ? falloNube(r.error) : lote.forEach(h => EN_NUBE.delete(h))));
+  }
+  return Promise.all(ops);
+}
+
+function subirEstado(clave, valor) {
+  return sb.from('estado').upsert({ clave, valor, updated_at: new Date().toISOString() })
+    .then(r => r.error && falloNube(r.error));
+}
+
+async function subirTodoALaNube() {
+  await subirCompras(_load(STORAGE_KEYS.compras, {}));
+  await Promise.all(Object.keys(ESTADO_DEFAULTS).map(k => subirEstado(k, _load(STORAGE_KEYS[k], ESTADO_DEFAULTS[k]))));
+  toast('Datos subidos a la base compartida', 'success');
 }
 
 /* =============================================================================
@@ -495,21 +560,24 @@ function _save(key, val) {
   }
 }
 
+// Cada set guarda en este computador (caché) y sube a la base compartida en segundo plano
+const guardarEstado = (clave) => (v) => { subirEstado(clave, v); return _save(STORAGE_KEYS[clave], v); };
+
 const store = {
   getCompras: () => _load(STORAGE_KEYS.compras, {}),
-  setCompras: (v) => _save(STORAGE_KEYS.compras, v),
+  setCompras: (v) => { subirCompras(v); return _save(STORAGE_KEYS.compras, v); },
   getBodegas: () => _load(STORAGE_KEYS.bodegas, {}),
-  setBodegas: (v) => _save(STORAGE_KEYS.bodegas, v),
+  setBodegas: guardarEstado('bodegas'),
   getTiers: () => _load(STORAGE_KEYS.tiers, {}),
-  setTiers: (v) => _save(STORAGE_KEYS.tiers, v),
+  setTiers: guardarEstado('tiers'),
   getArchivos: () => _load(STORAGE_KEYS.archivos, []),
-  setArchivos: (v) => _save(STORAGE_KEYS.archivos, v),
+  setArchivos: guardarEstado('archivos'),
   getOverrides: () => _load(STORAGE_KEYS.overrides, {}),
-  setOverrides: (v) => _save(STORAGE_KEYS.overrides, v),
+  setOverrides: guardarEstado('overrides'),
   getManuales: () => _load(STORAGE_KEYS.manuales, {}),
-  setManuales: (v) => _save(STORAGE_KEYS.manuales, v),
+  setManuales: guardarEstado('manuales'),
   getCompradores: () => _load(STORAGE_KEYS.compradores, []),
-  setCompradores: (v) => _save(STORAGE_KEYS.compradores, v),
+  setCompradores: guardarEstado('compradores'),
   // Uso aproximado en bytes
   usage: () => {
     let total = 0;
@@ -2300,7 +2368,7 @@ function renderBackupModal() {
     </div>
 
     <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">
-      Toda la información se guarda en tu navegador. Haz respaldos regulares para no perder datos, y para poder trabajar desde otro computador.
+      Las compras y la configuración se guardan en la base compartida: cualquier computador que ingrese con el usuario ve los mismos datos. El respaldo .json es una copia de seguridad adicional.
     </div>
 
     <div class="backup-section">
@@ -2677,10 +2745,10 @@ function buildConfigSheet(wb) {
 /* =============================================================================
    INICIO
    ============================================================================= */
-if (isAuthenticated()) {
-  document.getElementById('loginOverlay').classList.add('hidden');
-  cargarMonday();
-}
+sb.auth.getSession().then(({ data }) => {
+  if (data.session) return iniciar();
+  try { document.getElementById('loginEmail').value = localStorage.getItem(EMAIL_KEY) || ''; } catch(e) {}
+});
 </script>
 </body>
 </html>
