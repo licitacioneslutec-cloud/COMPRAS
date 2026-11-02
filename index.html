@@ -109,6 +109,15 @@
   .btn.danger:hover { background: var(--red); color: #fff; }
   .btn-small { background: var(--card); border: 1px solid var(--line); color: var(--navy); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .btn-small:hover { background: var(--navy); color: #fff; }
+  .margen-general { padding: 0 28px 24px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { display: flex; flex-direction: column; gap: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left; font-family: inherit; color: var(--navy); font-size: 13px; }
+  .chip span { font-size: 11px; color: var(--ink-soft); }
+  .chip:hover { border-color: var(--navy); }
+  .chip.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .chip.active span { color: rgba(255,255,255,0.75); }
+  .chip.perdida { color: var(--red); border-color: var(--red); }
+  .chip.perdida.active { background: var(--red); color: #fff; }
   .tree-grupo, .tree-pedido { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: var(--card); }
   .tree-pedido { margin: 0 10px 8px 22px; }
   .tree-grupo > summary, .tree-pedido > summary { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--navy); font-size: 13px; }
@@ -364,6 +373,10 @@
     <div class="sec-title">Compradores</div>
     <div class="buyers" id="buyers"></div>
 
+    <!-- Productos por nivel de margen -->
+    <div class="sec-title">Productos por margen</div>
+    <div class="margen-general" id="margenGeneral"></div>
+
     <!-- Secciones extras (acordeones) -->
     <div class="extras" id="extras"></div>
   </div>
@@ -379,6 +392,7 @@
   <div class="rules" id="tiersEditor"></div>
 
   <div class="stats" id="detailStats"></div>
+  <div id="detailMargen"></div>
   <div class="table-wrap"><table id="detailTable"></table></div>
 
   <div id="detailFaltantes"></div>
@@ -432,7 +446,7 @@ async function recargar() {
   cargarMonday(true);
 }
 
-const ESTADO_DEFAULTS = { bodegas: {}, tiers: {}, archivos: [], overrides: {}, manuales: {}, compradores: [] };
+const ESTADO_DEFAULTS = { bodegas: {}, tiers: {}, archivos: [], overrides: {}, manuales: {}, compradores: [], especiales: [] };
 let EN_NUBE = new Set();   // hashes de compras confirmados en la nube
 let avisoNubeMostrado = false;
 
@@ -532,7 +546,8 @@ const STORAGE_KEYS = {
   archivos: 'lutec_archivos_v1',      // [{ nombre, fecha, lineas, mes }]
   overrides: 'lutec_overrides_v1',    // { excelHash: { mondayId | oc+codigo, ts } } — pairing manual sinPedido→Monday
   manuales: 'lutec_manuales_v1',      // { excelHash: { comprador, bolsa, ts } } — compra sin Monday asignada a mano
-  compradores: 'lutec_compradores_v1' // [nombre] — compradores registrados a mano
+  compradores: 'lutec_compradores_v1', // [nombre] — compradores registrados a mano
+  especiales: 'lutec_especiales_v1'   // [nombre] — sus pedidos se les atribuyen sin importar la bodega
 };
 
 function _load(key, def) {
@@ -578,6 +593,8 @@ const store = {
   setManuales: guardarEstado('manuales'),
   getCompradores: () => _load(STORAGE_KEYS.compradores, []),
   setCompradores: guardarEstado('compradores'),
+  getEspeciales: () => _load(STORAGE_KEYS.especiales, []),
+  setEspeciales: guardarEstado('especiales'),
   // Uso aproximado en bytes
   usage: () => {
     let total = 0;
@@ -600,6 +617,7 @@ let ARCHIVOS = [];            // historial de subidas
 let OVERRIDES = {};           // { excelHash: { mondayId | oc+codigo, ts } } — pairing manual
 let MANUALES = {};            // { excelHash: { comprador, bolsa, ts } }
 let COMPRADORES = [];         // compradores registrados a mano
+let ESPECIALES = [];          // usuarios cuyos pedidos no siguen la regla de bodega
 
 let currentMonth = '__all__';
 let availableMonths = [];
@@ -689,6 +707,7 @@ function cargarEstadoLocal() {
   OVERRIDES = store.getOverrides();
   MANUALES = store.getManuales();
   COMPRADORES = store.getCompradores();
+  ESPECIALES = store.getEspeciales();
 }
 
 function pintar(sub) {
@@ -815,6 +834,19 @@ function isCustomTiers(nombre) {
   return !!TIERS_MAP[nombre];
 }
 
+// Personas de Monday en un pedido o subitem (la columna admite varias, separadas por coma)
+function personasDe(m) {
+  return `${m.logisticoPedido || ''},${m.logistico || ''}`.split(',')
+    .map(s => s.trim())
+    .filter(s => s && s !== 'SIN ASIGNAR');
+}
+
+// Usuario especial que figura en este pedido; si es compartido con otra persona, el especial se queda con todas las líneas
+function especialDe(m) {
+  const personas = personasDe(m).map(normHeader);
+  return ESPECIALES.find(e => personas.includes(normHeader(e))) || null;
+}
+
 // Determina comprador de una línea del Excel según bodega
 function compradorPorBodega(bodega, fallbackLogistico='') {
   if (bodega && BODEGAS_MAP[bodega]) return BODEGAS_MAP[bodega];
@@ -902,7 +934,9 @@ function procesarTodo() {
     const totalBolsa = bolsa * cant;
     const utilTotal = totalBolsa - totalCompra;
     const pctUtil = bolsa > 0 ? ((bolsa - vunit) / bolsa) * 100 : 0;
-    const comprador = via === 'manual' ? MANUALES[h].comprador : compradorPorBodega(c.bodega, monday.logistico);
+    const comprador = via === 'manual'
+      ? MANUALES[h].comprador
+      : especialDe(monday) || compradorPorBodega(c.bodega, monday.logistico);
 
     lineasComision.push({
       fecha: c.fecha,
@@ -942,7 +976,7 @@ function procesarTodo() {
   });
 
   const pendientes = [];
-  const datosPedido = m => ({ pedido: m.pedido || '', proyecto: m.proyecto || '', grupo: m.grupo || '' });
+  const datosPedido = m => ({ pedido: m.pedido || '', proyecto: m.proyecto || '', grupo: m.grupo || '', logisticoPedido: m.logisticoPedido || '' });
   MATERIALES_MONDAY.forEach(m => {
     if (m.soloEmparejar || !m.oc || !m.codigo) return;
     const k = keyOCCod(m.oc, m.codigo);
@@ -1077,8 +1111,84 @@ function renderDashboard() {
       </div>`).join('');
   }
 
+  renderMargenGeneral();
+
   // Secciones extras
   renderExtras();
+}
+
+/* =============================================================================
+   FILTRO POR NIVEL DE MARGEN
+   ============================================================================= */
+let margenGeneralKey = 'perdida';
+let margenDetalleKey = 'todos';
+
+function nivelesMargen(tiers) {
+  const niveles = [{ key: 'perdida', label: 'Pérdida', test: l => l.bolsa > 0 && l.pctUtil < 0 }];
+  tiers.forEach((t, i) => {
+    const desde = i ? tiers[i - 1].hasta : 0;
+    const hasta = i === tiers.length - 1 ? null : t.hasta;
+    niveles.push({
+      key: 'n' + i,
+      label: hasta === null ? `${desde}% o más` : `${desde}–${hasta}%`,
+      test: l => l.bolsa > 0 && l.pctUtil >= desde && (hasta === null || l.pctUtil < hasta)
+    });
+  });
+  // Sin bolsa no hay contra qué medir: pctUtil queda en 0 y se confundiría con el primer escalón
+  niveles.push({ key: 'sinbolsa', label: 'Sin bolsa', test: l => !(l.bolsa > 0) });
+  return niveles;
+}
+
+// Si el nivel ya no existe (el comprador cambió sus escalones), vuelve a Todos
+function filtrarMargen(lineas, niveles, key) {
+  const nivel = niveles.find(n => n.key === key);
+  return nivel ? { key, lineas: lineas.filter(nivel.test) } : { key: 'todos', lineas };
+}
+
+function chipsMargen(lineas, niveles, activo, fn) {
+  const chip = (key, label, arr) => `<button class="chip ${key === 'perdida' ? 'perdida' : ''} ${key === activo ? 'active' : ''}" onclick="${fn}('${key}')">
+      <b>${label}</b><span>${arr.length} ${arr.length === 1 ? 'línea' : 'líneas'} · ${fmt(arr.reduce((s, l) => s + l.utilTotal, 0))}</span>
+    </button>`;
+  return `<div class="chips">${chip('todos', 'Todos', lineas)}${niveles.map(n => chip(n.key, n.label, lineas.filter(n.test))).join('')}</div>`;
+}
+
+function setMargenGeneral(key) {
+  margenGeneralKey = key;
+  renderMargenGeneral();
+}
+
+function renderMargenGeneral() {
+  const todas = CROSSED.lineasComision;
+  const niveles = nivelesMargen(TIERS_DEFAULT);
+  const { key, lineas } = filtrarMargen(todas, niveles, margenGeneralKey);
+  const orden = [...lineas].sort((a, b) => a.utilTotal - b.utilTotal);
+  const LIMITE = 200;
+  document.getElementById('margenGeneral').innerHTML = chipsMargen(todas, niveles, key, 'setMargenGeneral') + (orden.length === 0
+    ? `<div class="empty-msg" style="background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:20px;">No hay productos en este nivel.</div>`
+    : `<div class="table-wrap"><table>
+        <thead><tr>
+          <th class="tl">Comprador</th><th class="tl">Fecha</th><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Material</th><th class="tl">Proyecto</th>
+          <th>Bolsa unit.</th><th>Compra unit.</th><th>Compra total</th><th>Utilidad</th><th>% Util</th>
+        </tr></thead>
+        <tbody>${orden.slice(0, LIMITE).map(l => `<tr>
+          <td class="tl"><a href="#" style="color:var(--navy);font-weight:600;" onclick="showDetail('${l.comprador.replace(/'/g, "\\'")}');return false;">${l.comprador}</a></td>
+          <td class="tl">${fmtFecha(l.fecha)}</td>
+          <td class="tl">${l.oc || '—'}</td>
+          <td class="tl">${l.codigo || '—'}</td>
+          <td class="tl desc">${l.descripcion || '—'}</td>
+          <td class="tl">${l.proyecto || '—'}</td>
+          <td>${fmt(l.bolsa)}</td>
+          <td>${fmt(l.vunit)}</td>
+          <td>${fmt(l.totalCompra)}</td>
+          <td>${fmt(l.utilTotal)}</td>
+          <td>${pct(l.pctUtil)}</td>
+        </tr>`).join('')}${orden.length > LIMITE ? `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${orden.length - LIMITE} más</td></tr>` : ''}</tbody>
+      </table></div>`);
+}
+
+function setMargenDetalle(key) {
+  margenDetalleKey = key;
+  renderDetailTable(currentBuyerName);
 }
 
 /* =============================================================================
@@ -1512,6 +1622,7 @@ function toggleAcc(id) {
 function showDetail(nombre) {
   const d = CROSSED.porComprador[nombre];
   if (!d) { showDashboard(); return; }
+  if (nombre !== currentBuyerName) margenDetalleKey = 'todos';
   currentBuyerName = nombre;
 
   document.getElementById('dashboard').classList.add('hidden');
@@ -1530,7 +1641,49 @@ function showDetail(nombre) {
     <div class="stat"><div class="lbl">Utilidad</div><div class="val">${fmt(d.utilidad)}</div></div>
     <div class="stat accent"><div class="lbl">Comisión</div><div class="val">${fmt(d.comision)}</div></div>`;
 
-  const ord = [...d.lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  renderDetailTable(nombre);
+
+  // Faltantes de este comprador (por bodega)
+  const bodegasDel = new Set(d.lineas.map(l => l.bodega).filter(Boolean));
+  const faltantesDel = CROSSED.pendientes.filter(p => {
+    const especial = especialDe(p);
+    if (especial) return especial === nombre;
+    // asignamos el faltante al comprador cuya bodega coincida (aproximado por logístico si no hay bodega)
+    return p.logistico === nombre || Array.from(bodegasDel).some(b => BODEGAS_MAP[b] === nombre && (!p.logistico || p.logistico === nombre));
+  });
+
+  const fdEl = document.getElementById('detailFaltantes');
+  if (faltantesDel.length === 0) {
+    fdEl.innerHTML = '';
+  } else {
+    fdEl.innerHTML = `
+      <div class="sec-title" style="padding-left:0;padding-right:0;">Pendientes atribuibles a ${nombre}</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>Pedida</th><th>Faltante</th><th>Bolsa</th></tr></thead>
+        <tbody>${faltantesDel.map(p => `<tr>
+          <td class="tl">${p.oc}</td>
+          <td class="tl">${p.codigo}</td>
+          <td class="tl desc">${p.descripcion || '—'}</td>
+          <td>${p.cantPedida}</td>
+          <td><b>${p.cantFaltante}</b></td>
+          <td>${fmt(p.bolsa)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  window.scrollTo(0, 0);
+}
+
+// Solo la tabla y su filtro: no redibuja el editor de escalones ni mueve el scroll
+function renderDetailTable(nombre) {
+  const d = CROSSED.porComprador[nombre];
+  if (!d) return;
+  const niveles = nivelesMargen(getTiersFor(nombre) || TIERS_DEFAULT);
+  const { key, lineas } = filtrarMargen(d.lineas, niveles, margenDetalleKey);
+  margenDetalleKey = key;
+  document.getElementById('detailMargen').innerHTML = chipsMargen(d.lineas, niveles, key, 'setMargenDetalle');
+
+  const ord = [...lineas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
   document.getElementById('detailTable').innerHTML = `
     <thead><tr>
       <th class="tl">Fecha</th><th class="tl">Bodega</th><th class="tl">OC</th><th class="tl">Código</th>
@@ -1563,39 +1716,11 @@ function showDetail(nombre) {
       <td>${commissionBadge(l.pctComis)}</td>
       <td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`;
-    }).join('')}</tbody>
+    }).join('') || `<tr><td colspan="17" style="text-align:center;color:var(--ink-soft);">No hay productos en este nivel.</td></tr>`}</tbody>
     <tfoot>
       <tr><td colspan="16">Total valor solicitado · ${nombre}</td><td>${fmt(d.valorSolicitado)}</td></tr>
       <tr><td colspan="16">Total comisión · ${nombre}</td><td>${fmt(d.comision)}</td></tr>
     </tfoot>`;
-
-  // Faltantes de este comprador (por bodega)
-  const bodegasDel = new Set(d.lineas.map(l => l.bodega).filter(Boolean));
-  const faltantesDel = CROSSED.pendientes.filter(p => {
-    // asignamos el faltante al comprador cuya bodega coincida (aproximado por logístico si no hay bodega)
-    return p.logistico === nombre || Array.from(bodegasDel).some(b => BODEGAS_MAP[b] === nombre && (!p.logistico || p.logistico === nombre));
-  });
-
-  const fdEl = document.getElementById('detailFaltantes');
-  if (faltantesDel.length === 0) {
-    fdEl.innerHTML = '';
-  } else {
-    fdEl.innerHTML = `
-      <div class="sec-title" style="padding-left:0;padding-right:0;">Pendientes atribuibles a ${nombre}</div>
-      <div class="table-wrap"><table>
-        <thead><tr><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Descripción</th><th>Pedida</th><th>Faltante</th><th>Bolsa</th></tr></thead>
-        <tbody>${faltantesDel.map(p => `<tr>
-          <td class="tl">${p.oc}</td>
-          <td class="tl">${p.codigo}</td>
-          <td class="tl desc">${p.descripcion || '—'}</td>
-          <td>${p.cantPedida}</td>
-          <td><b>${p.cantFaltante}</b></td>
-          <td>${fmt(p.bolsa)}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
-  }
-
-  window.scrollTo(0, 0);
 }
 
 function commissionBadge(pctComis) {
@@ -1942,10 +2067,51 @@ function renderConfigModal() {
     <div class="modal-tabs">
       <button class="active" onclick="switchConfigTab('bodegas', this)">Bodegas → Comprador</button>
       <button onclick="switchConfigTab('tiers', this)">Escalones por comprador</button>
+      <button onclick="switchConfigTab('especiales', this)">Usuarios especiales</button>
     </div>
     <div class="modal-tab-content active" id="tabBodegas">${renderBodegasTab()}</div>
     <div class="modal-tab-content" id="tabTiers">${renderTiersTab()}</div>
+    <div class="modal-tab-content" id="tabEspeciales">${renderEspecialesTab()}</div>
   `;
+}
+
+function renderEspecialesTab() {
+  // Una entrada por persona de Monday (sin distinguir mayúsculas ni tildes) con sus pedidos distintos
+  const personas = new Map();
+  const entrada = n => {
+    const k = normHeader(n);
+    if (!personas.has(k)) personas.set(k, { nombre: n, pedidos: new Set() });
+    return personas.get(k);
+  };
+  ESPECIALES.forEach(entrada);
+  MATERIALES_MONDAY.forEach(m => personasDe(m).forEach(n => entrada(n).pedidos.add(m.pedido)));
+  const lista = [...personas.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  if (!lista.length) return `<div class="empty-msg">Aún no hay personas de Monday cargadas.</div>`;
+  return `
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">
+      Las compras de los pedidos donde figure un usuario marcado (columna LOGÍSTICO en Monday) se le atribuyen a esa persona, sin importar a quién esté asignada la bodega. Si el pedido es compartido con otra persona, todas sus líneas pasan al usuario marcado. Una asignación manual siempre tiene prioridad.
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${lista.map(p => `<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" ${ESPECIALES.some(e => normHeader(e) === normHeader(p.nombre)) ? 'checked' : ''} onchange="toggleEspecial('${p.nombre.replace(/'/g, "\\'")}', this.checked)">
+        <span style="flex:1;font-weight:600;color:var(--navy);">${p.nombre}</span>
+        <span style="font-size:12px;color:var(--ink-soft);">${p.pedidos.size} pedidos</span>
+      </label>`).join('')}
+    </div>`;
+}
+
+function toggleEspecial(nombre, activo) {
+  ESPECIALES = ESPECIALES.filter(e => normHeader(e) !== normHeader(nombre));
+  if (activo) ESPECIALES.push(nombre);
+  store.setEspeciales(ESPECIALES);
+  procesarTodo();
+  if (currentBuyerName) {
+    if (CROSSED.porComprador[currentBuyerName]) showDetail(currentBuyerName);
+    else showDashboard();
+  }
+  document.getElementById('tabBodegas').innerHTML = renderBodegasTab();
+  document.getElementById('tabTiers').innerHTML = renderTiersTab();
+  toast(activo ? `${nombre} marcado como usuario especial` : `${nombre} ya no es usuario especial`, 'success');
 }
 
 function switchConfigTab(id, btn) {
@@ -1962,6 +2128,7 @@ function getAllCompradores() {
   Object.values(BODEGAS_MAP).forEach(c => { if (c) set.add(c); });
   Object.keys(TIERS_MAP).forEach(n => set.add(n));
   COMPRADORES.forEach(n => set.add(n));
+  ESPECIALES.forEach(n => set.add(n));
   Object.values(MANUALES).forEach(m => set.add(m.comprador));
   return Array.from(set).sort();
 }
@@ -2425,7 +2592,8 @@ function descargarRespaldo() {
     archivos: ARCHIVOS,
     overrides: OVERRIDES,
     manuales: MANUALES,
-    compradores: COMPRADORES
+    compradores: COMPRADORES,
+    especiales: ESPECIALES
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -2454,15 +2622,9 @@ async function restaurarRespaldo(file) {
     store.setOverrides(data.overrides || {});
     store.setManuales(data.manuales || {});
     store.setCompradores(data.compradores || []);
+    store.setEspeciales(data.especiales || []);
 
-    COMPRAS = store.getCompras();
-    BODEGAS_MAP = store.getBodegas();
-    TIERS_MAP = store.getTiers();
-    ARCHIVOS = store.getArchivos();
-    OVERRIDES = store.getOverrides();
-    MANUALES = store.getManuales();
-    COMPRADORES = store.getCompradores();
-
+    cargarEstadoLocal();
     detectAvailableMonths();
     procesarTodo();
     rEl.innerHTML = `<div style="color:var(--green);font-size:13px;">✓ Respaldo restaurado correctamente</div>`;
