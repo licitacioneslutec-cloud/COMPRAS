@@ -865,7 +865,7 @@ function comprasDelMes() {
 function indexarMonday() {
   const idx = {};
   MATERIALES_MONDAY.forEach(m => {
-    if (m.soloEmparejar || !m.oc || !m.codigo) return; // sin OC/código (o tablero de agosto) no participa del match automático
+    if (m.tableroAgosto || !m.oc || !m.codigo) return; // el tablero de agosto no tiene código: cruza aparte, por OC
     const k = keyOCCod(m.oc, m.codigo);
     if (!idx[k]) idx[k] = [];
     idx[k].push(m);
@@ -873,9 +873,48 @@ function indexarMonday() {
   return idx;
 }
 
+// Tablero de agosto: OC → ítems (no tiene código LUTEC)
+function indexarAgosto() {
+  const idx = {};
+  MATERIALES_MONDAY.forEach(m => {
+    if (m.tableroAgosto && m.oc) (idx[normOC(m.oc)] ||= []).push(m);
+  });
+  return idx;
+}
+
+// Fracción de las palabras de `a` que aparecen en `b`
+function similitud(a, b) {
+  const base = palabras(a);
+  if (!base.size) return 0;
+  const w = palabras(b);
+  let comunes = 0;
+  base.forEach(x => { if (w.has(x)) comunes++; });
+  return comunes / base.size;
+}
+
+// Dentro de la misma OC elige el ítem por descripción; el centro de costo igual a la bodega
+// y la misma cantidad suben el puntaje. Si hay duda, no cruza: queda para emparejar a mano.
+function matchAgosto(c, idxAgosto) {
+  const candidatos = idxAgosto[normOC(c.oc)];
+  if (!candidatos) return null;
+  const bodega = normHeader(c.bodega);
+  const [mejor, segundo] = candidatos.map(m => {
+    const cc = normHeader(m.proyecto);
+    let p = similitud(c.descripcion, m.descripcion);
+    if (bodega && cc && (bodega.includes(cc) || cc.includes(bodega))) p += 0.2;
+    if (m.cantidad && m.cantidad === c.cant) p += 0.1;
+    return { m, p };
+  }).sort((a, b) => b.p - a.p);
+  if (mejor.p < 0.5) return null;
+  // Empate entre ítems con distinta bolsa: no hay cómo saber cuál es
+  if (segundo && mejor.p - segundo.p < 0.1 && segundo.m.bolsa !== mejor.m.bolsa) return null;
+  return mejor.m;
+}
+
 // Motor principal: cruza Excel del mes con Monday y arma CROSSED
 function procesarTodo() {
   const idxMonday = indexarMonday();
+  const idxAgosto = indexarAgosto();
   const compras = comprasDelMes();
 
   const lineasComision = [];
@@ -898,7 +937,13 @@ function procesarTodo() {
       if (matches?.length) via = 'override';
     }
 
-    // Fallback 2: asignación manual a un comprador con bolsa escrita a mano
+    // Fallback 2: tablero de agosto, por OC + descripción
+    if (!matches?.length) {
+      const agosto = matchAgosto(c, idxAgosto);
+      if (agosto) { matches = [agosto]; via = 'agosto'; }
+    }
+
+    // Fallback 3: asignación manual a un comprador con bolsa escrita a mano
     if (!matches?.length && MANUALES[h]) {
       const mn = MANUALES[h];
       matches = [{ bolsa: mn.bolsa, cantidad: c.cant, logistico: mn.comprador, descripcion: c.descripcion, unidad: c.unidad }];
@@ -963,7 +1008,8 @@ function procesarTodo() {
       tablero: monday.tablero || '',
       excelHash: h,
       viaOverride: via === 'override',
-      viaManual: via === 'manual'
+      viaManual: via === 'manual',
+      viaAgosto: via === 'agosto'
     });
   });
 
@@ -978,7 +1024,7 @@ function procesarTodo() {
   const pendientes = [];
   const datosPedido = m => ({ pedido: m.pedido || '', proyecto: m.proyecto || '', grupo: m.grupo || '', logisticoPedido: m.logisticoPedido || '' });
   MATERIALES_MONDAY.forEach(m => {
-    if (m.soloEmparejar || !m.oc || !m.codigo) return;
+    if (m.tableroAgosto || !m.oc || !m.codigo) return;
     const k = keyOCCod(m.oc, m.codigo);
     const compradoTotal = sumaPorKey[k] || 0;
     const faltante = (m.cantidad || 0) - compradoTotal;
@@ -999,7 +1045,7 @@ function procesarTodo() {
   });
 
   // 3. Materiales de Monday sin OC/código (no pueden hacer match)
-  const mondaySinOC = MATERIALES_MONDAY.filter(m => !m.soloEmparejar && (!m.oc || !m.codigo));
+  const mondaySinOC = MATERIALES_MONDAY.filter(m => !m.tableroAgosto && (!m.oc || !m.codigo));
   mondaySinOC.forEach(m => {
     pendientes.push({
       oc: normOC(m.oc) || '—',
@@ -1696,6 +1742,8 @@ function renderDetailTable(nombre) {
         ? ` <span title="Emparejado manualmente — clic para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoPair('${hq}')">⇄</span>`
         : l.viaManual
         ? ` <span title="Asignado a mano con bolsa escrita — clic para deshacer" style="cursor:pointer;color:var(--amber);font-weight:700;" onclick="undoAsignar('${hq}')">✎</span>`
+        : l.viaAgosto
+        ? ` <span title="Cruzado con el tablero de agosto por OC y descripción — clic para cambiar el ítem" style="cursor:pointer;color:var(--blue);font-weight:700;" onclick="openPairModal('${hq}')">A</span>`
         : '';
       return `<tr>
       <td class="tl">${fmtFecha(l.fecha)}${marca}</td>
@@ -1883,8 +1931,8 @@ function openPairModal(hash) {
 }
 
 function renderPairModal() {
-  // Datos de la línea Excel que se está emparejando
-  const excelRow = CROSSED.sinPedido.find(l => l.hash === pairingHash);
+  // Puede venir de "Compras sin pedido" o de una línea ya cruzada con agosto
+  const excelRow = COMPRAS[pairingHash];
   if (!excelRow) {
     return `<div class="modal-head"><h2>Emparejar manualmente</h2><button class="modal-close" onclick="closeModal()">×</button></div>
       <div style="padding:20px;color:var(--red);">No se encontró la línea del Excel. Recarga la página.</div>`;
@@ -1896,7 +1944,7 @@ function renderPairModal() {
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper);">
-      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;">Línea del Excel sin pedido:</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;">Línea del Excel:</div>
       <div style="font-size:13px;"><b>OC ${normOC(excelRow.oc) || '—'} · Código ${normCod(excelRow.codigo) || '—'}</b></div>
       <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">${excelRow.descripcion || '—'} · ${excelRow.bodega || '—'} · ${excelRow.cant} × ${fmt(excelRow.valorUnitario)}</div>
     </div>
@@ -1908,19 +1956,19 @@ function renderPairModal() {
     </div>`;
 }
 
-// Palabras significativas (sin tildes, ≥3 letras) para comparar descripciones
+// Palabras significativas para comparar descripciones: sin tildes, ≥3 letras, y las medidas
+// ("1/2", "3/4", "1.80") aunque sean cortas, porque suelen ser lo único que distingue un ítem de otro
 function palabras(s) {
   return new Set(String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase()
-    .split(/[^A-Z0-9]+/).filter(w => w.length >= 3));
+    .split(/[^A-Z0-9/.]+/)
+    .map(w => w.replace(/^[./]+|[./]+$/g, ''))
+    .filter(w => w.length >= 3 || /\d/.test(w)));
 }
 
-// Todos los ítems de Monday (incluido el tablero de agosto), los más parecidos a la línea del Excel primero
+// Todos los ítems de Monday (incluido el tablero de agosto): primero los de la misma OC, luego los más parecidos
 function candidatosPair(excelRow) {
-  const base = palabras(excelRow.descripcion);
+  const oc = normOC(excelRow.oc);
   return MATERIALES_MONDAY.filter(m => m.id).map(m => {
-    const w = palabras(m.descripcion);
-    let comunes = 0;
-    base.forEach(x => { if (w.has(x)) comunes++; });
     return {
       id: String(m.id),
       oc: normOC(m.oc) || '—',
@@ -1930,8 +1978,8 @@ function candidatosPair(excelRow) {
       cantidad: m.cantidad || 0,
       logistico: m.logistico || '',
       pedido: m.pedido || '',
-      agosto: !!m.soloEmparejar,
-      score: base.size ? comunes / base.size : 0
+      agosto: !!m.tableroAgosto,
+      score: similitud(excelRow.descripcion, m.descripcion) + (oc && normOC(m.oc) === oc ? 1 : 0)
     };
   }).sort((a, b) => b.score - a.score);
 }
@@ -1955,7 +2003,7 @@ function renderPairRows(items) {
 function setupPair() {
   const inp = document.getElementById('pairSearch');
   if (!inp) return;
-  const excelRow = CROSSED.sinPedido.find(l => l.hash === pairingHash);
+  const excelRow = COMPRAS[pairingHash];
   if (!excelRow) return;
   const todos = candidatosPair(excelRow);
   inp.addEventListener('input', e => {
