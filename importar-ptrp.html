@@ -118,7 +118,7 @@
       <strong>¿Cómo funciona?</strong><br>
       1. En Monday, marca los pedidos con estado <strong>"Descargar Archivo"</strong> en la columna Estado (con la plantilla cargada en la columna Plantilla).<br>
       2. Haz clic en <strong>Importar ahora</strong> — el sistema descarga la plantilla, lee los materiales y los crea como sub-items.<br>
-      3. Al terminar, los pedidos quedan en estado <strong>"Listo"</strong> para que no se importen dos veces.
+      3. Al terminar, los pedidos quedan en estado <strong>"Listo"</strong> para que no se importen dos veces. Si algo falla, siguen en <strong>"Descargar Archivo"</strong> y la página muestra el error.
     </div>
   </div>
 </div>
@@ -155,40 +155,39 @@ async function importar() {
   btn.disabled = true;
   icon.innerHTML = '<span class="spinner"></span>';
   text.textContent = 'Importando…';
-  setStatus('running', 'Enviando solicitud a n8n…');
+  setStatus('running', 'Leyendo plantillas y creando sub-items en Monday… no cierres esta página.');
   addLog('Importación disparada');
 
   try {
+    // n8n responde cuando termina todo el proceso (o falla)
     const resp = await fetch(IMPORT_URL);
-    if (!resp.ok) throw new Error('Error HTTP ' + resp.status);
+    let data = null;
+    try { data = await resp.json(); } catch(e) {}
 
-    let data;
-    try { data = await resp.json(); } catch(e) { data = null; }
-
-    if (!data || data.total === undefined) {
-      addLog('n8n confirmó recepción — procesando en segundo plano');
-      setStatus('ok', 'Importación enviada.');
+    if (resp.status === 504 || resp.status === 524) {
+      setStatus('running', 'La importación está tardando más de lo normal y sigue en curso. Revisa Monday en un par de minutos: si el pedido quedó en "Listo", terminó bien.');
+      addLog('Tiempo de espera agotado — el proceso continúa en n8n');
       return;
+    }
+
+    if (!resp.ok || !data || !data.ok) {
+      throw new Error('La importación falló. Los pedidos siguen en "Descargar Archivo": revisa la plantilla (o el detalle en n8n) y vuelve a importar.');
     }
 
     if (data.total === 0) {
       setStatus('ok', 'No hay pedidos pendientes de importar.');
       addLog('No se encontraron pedidos con estado "Descargar Archivo"');
     } else {
-      setStatus('running', 'Procesando ' + data.total + ' pedido(s)… Los sub-items se están creando en Monday.');
-      data.pedidos.forEach(function(nombre, i) {
-        addLog((i + 1) + '. ' + nombre);
+      data.pedidos.forEach(function(p, i) {
+        addLog((i + 1) + '. ' + p.nombre + ' — ' + p.creados + ' sub-item(s)');
       });
-      addLog('Se encontraron ' + data.total + ' pedido(s) para importar');
-      addLog('<a href="https://licitaciones3.app.n8n.cloud/workflow/LzsmJoL9uwGCaQdz/executions" target="_blank" style="color:#2c3e50;text-decoration:underline;">Ver estado en n8n</a>');
+      setStatus('ok', '✔ ' + data.mensaje + '. Los pedidos quedaron en "Listo".');
     }
   } catch(e) {
     console.error(e);
     let errorMsg = e.message;
     if (errorMsg.includes('Failed to fetch')) {
       errorMsg = 'No se pudo conectar con n8n. Verifique que el workflow esté activo.';
-    } else if (errorMsg.includes('HOJA_INCORRECTA')) {
-      errorMsg = 'El Excel tiene la información en una hoja secundaria. Mueva los datos a la primera hoja.';
     }
     addLog('Error: ' + errorMsg);
     setStatus('err', errorMsg);
