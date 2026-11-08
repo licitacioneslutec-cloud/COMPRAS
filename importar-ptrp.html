@@ -118,7 +118,7 @@
       <strong>¿Cómo funciona?</strong><br>
       1. En Monday, marca los pedidos con estado <strong>"Descargar Archivo"</strong> en la columna Estado (con la plantilla cargada en la columna Plantilla).<br>
       2. Haz clic en <strong>Importar ahora</strong> — el sistema descarga la plantilla, lee los materiales y los crea como sub-items.<br>
-      3. Al terminar, los pedidos quedan en estado <strong>"Listo"</strong> para que no se importen dos veces. Si algo falla, siguen en <strong>"Descargar Archivo"</strong> y la página muestra el error.
+      3. Al terminar, los pedidos quedan en estado <strong>"Listo"</strong> para que no se importen dos veces. Si el archivo de un pedido tiene un error, ese pedido pasa a <strong>"Sin Descarga"</strong> y la página dice qué revisar; corrígelo y vuelve a ponerlo en <strong>"Descargar Archivo"</strong>.
     </div>
   </div>
 </div>
@@ -145,6 +145,10 @@ function setStatus(type, msg) {
   const el = document.getElementById('status');
   el.className = 'status ' + type;
   el.textContent = msg;
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
 }
 
 async function importar() {
@@ -179,9 +183,15 @@ async function importar() {
       addLog('No se encontraron pedidos con estado "Descargar Archivo"');
     } else {
       data.pedidos.forEach(function(p, i) {
-        addLog((i + 1) + '. ' + p.nombre + ' — ' + p.creados + ' sub-item(s)');
+        addLog((i + 1) + '. ' + esc(p.nombre) + (p.ok
+          ? ' — ✔ ' + p.creados + ' sub-item(s)'
+          : ' — <strong style="color:var(--red)">✖ Revise el archivo:</strong> ' + esc(p.error)));
       });
-      setStatus('ok', '✔ ' + data.mensaje + '. Los pedidos quedaron en "Listo".');
+      if (data.errores) {
+        setStatus('err', '✖ ' + data.mensaje);
+      } else {
+        setStatus('ok', '✔ ' + data.mensaje + '. Los pedidos quedaron en "Listo".');
+      }
     }
   } catch(e) {
     console.error(e);
