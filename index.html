@@ -118,6 +118,10 @@
   .chip.active span { color: rgba(255,255,255,0.75); }
   .chip.perdida { color: var(--red); border-color: var(--red); }
   .chip.perdida.active { background: var(--red); color: #fff; }
+  .chip.atipica { color: var(--amber); border-color: var(--amber); }
+  .chip.atipica.active { background: var(--amber); color: #fff; }
+  tr.atipica td { background: #fff4e0; }
+  .causa { font-size: 11px; color: var(--amber); margin-top: 2px; }
   .tree-grupo, .tree-pedido { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: var(--card); }
   .tree-pedido { margin: 0 10px 8px 22px; }
   .tree-grupo > summary, .tree-pedido > summary { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--navy); font-size: 13px; }
@@ -1068,18 +1072,24 @@ function procesarTodo() {
     if (!porComprador[l.comprador]) {
       porComprador[l.comprador] = {
         nombre: l.comprador, lineas: [],
-        comprado: 0, negociado: 0, utilidad: 0, valorSolicitado: 0
+        comprado: 0, negociado: 0, utilidad: 0, valorSolicitado: 0, _items: new Set()
       };
     }
-    porComprador[l.comprador].lineas.push(l);
-    porComprador[l.comprador].comprado += l.totalCompra;
-    porComprador[l.comprador].negociado += l.totalBolsa;
-    porComprador[l.comprador].utilidad += l.utilTotal;
-    porComprador[l.comprador].valorSolicitado += (l.cantMonday || 0) * (l.bolsa || 0);
+    const pc = porComprador[l.comprador];
+    pc.lineas.push(l);
+    pc.comprado += l.totalCompra;
+    pc.negociado += l.totalBolsa;
+    pc.utilidad += l.utilTotal;
+    // Lo pedido se cuenta una vez por ítem de Monday, aunque se haya comprado en varias entregas
+    if (!l.mondayId || !pc._items.has(l.mondayId)) {
+      if (l.mondayId) pc._items.add(l.mondayId);
+      pc.valorSolicitado += (l.cantMonday || 0) * (l.bolsa || 0);
+    }
   });
 
   // 5. Aplicar escalones (por comprador) y calcular comisión
   Object.values(porComprador).forEach(c => {
+    delete c._items;
     const tiers = getTiersFor(c.nombre) || TIERS_DEFAULT;
     let totalComision = 0;
     c.lineas.forEach(l => {
@@ -1169,8 +1179,35 @@ function renderDashboard() {
 let margenGeneralKey = 'perdida';
 let margenDetalleKey = 'todos';
 
+// Utilidad o pérdida de más del 50 % frente a la bolsa: casi siempre es un error de unidad, bolsa o cruce
+const UMBRAL_ATIPICO = 50;
+const esAtipica = l => l.bolsa > 0 && Math.abs(l.pctUtil) > UMBRAL_ATIPICO;
+
+function causaAtipica(l) {
+  // 3 veces o más: una entrega parcial (60 de 100) no cuenta como otra unidad
+  if (l.cantMonday && l.cantExcel && Math.max(l.cantExcel, l.cantMonday) / Math.min(l.cantExcel, l.cantMonday) >= 3)
+    return `Se compraron ${l.cantExcel} y se pidieron ${l.cantMonday}: puede estar en otra unidad`;
+  const r = l.vunit > 0 ? Math.max(l.bolsa, l.vunit) / Math.min(l.bolsa, l.vunit) : 0;
+  if (r >= 1.9 && Math.abs(r - Math.round(r)) < 0.1)
+    return `La bolsa es ~${Math.round(r)} veces ${l.bolsa > l.vunit ? 'el precio' : 'menor que el precio'}: posible precio por paquete contra por unidad`;
+  if (l.viaAgosto) return 'Cruzado con agosto por descripción: revisar el ítem';
+  if (l.viaOverride) return 'Emparejado a mano: revisar el ítem';
+  if (l.viaManual) return 'Bolsa escrita a mano: revisar el valor';
+  return l.pctUtil > 0
+    ? 'Bolsa muy alta frente a la compra: revisar Monday'
+    : 'Compra muy por encima de la bolsa: revisar el precio del Excel o una bolsa desactualizada';
+}
+
+// ⚠ con la causa al pasar el mouse, junto al % de utilidad
+const pctConAviso = l => esAtipica(l)
+  ? `<span title="${causaAtipica(l).replace(/"/g, '&quot;')}" style="cursor:help;white-space:nowrap;">⚠ ${pct(l.pctUtil)}</span>`
+  : pct(l.pctUtil);
+
 function nivelesMargen(tiers) {
-  const niveles = [{ key: 'perdida', label: 'Pérdida', test: l => l.bolsa > 0 && l.pctUtil < 0 }];
+  const niveles = [
+    { key: 'perdida', label: 'Pérdida', test: l => l.bolsa > 0 && l.pctUtil < 0 },
+    { key: 'atipica', label: `Diferencia > ${UMBRAL_ATIPICO} %`, test: esAtipica }
+  ];
   tiers.forEach((t, i) => {
     const desde = i ? tiers[i - 1].hasta : 0;
     const hasta = i === tiers.length - 1 ? null : t.hasta;
@@ -1192,7 +1229,7 @@ function filtrarMargen(lineas, niveles, key) {
 }
 
 function chipsMargen(lineas, niveles, activo, fn) {
-  const chip = (key, label, arr) => `<button class="chip ${key === 'perdida' ? 'perdida' : ''} ${key === activo ? 'active' : ''}" onclick="${fn}('${key}')">
+  const chip = (key, label, arr) => `<button class="chip ${key === 'perdida' || key === 'atipica' ? key : ''} ${key === activo ? 'active' : ''}" onclick="${fn}('${key}')">
       <b>${label}</b><span>${arr.length} ${arr.length === 1 ? 'línea' : 'líneas'} · ${fmt(arr.reduce((s, l) => s + l.utilTotal, 0))}</span>
     </button>`;
   return `<div class="chips">${chip('todos', 'Todos', lineas)}${niveles.map(n => chip(n.key, n.label, lineas.filter(n.test))).join('')}</div>`;
@@ -1214,9 +1251,9 @@ function renderMargenGeneral() {
     : `<div class="table-wrap"><table>
         <thead><tr>
           <th class="tl">Comprador</th><th class="tl">Fecha</th><th class="tl">OC</th><th class="tl">Código</th><th class="tl">Material</th><th class="tl">Proyecto</th>
-          <th>Bolsa unit.</th><th>Compra unit.</th><th>Compra total</th><th>Utilidad</th><th>% Util</th>
+          <th>Bolsa unit.</th><th>Bolsa total</th><th>Compra unit.</th><th>Compra total</th><th>Utilidad</th><th>% Util</th>
         </tr></thead>
-        <tbody>${orden.slice(0, LIMITE).map(l => `<tr>
+        <tbody>${orden.slice(0, LIMITE).map(l => `<tr class="${esAtipica(l) ? 'atipica' : ''}">
           <td class="tl"><a href="#" style="color:var(--navy);font-weight:600;" onclick="showDetail('${l.comprador.replace(/'/g, "\\'")}');return false;">${l.comprador}</a></td>
           <td class="tl">${fmtFecha(l.fecha)}</td>
           <td class="tl">${l.oc || '—'}</td>
@@ -1224,11 +1261,12 @@ function renderMargenGeneral() {
           <td class="tl desc">${l.descripcion || '—'}</td>
           <td class="tl">${l.proyecto || '—'}</td>
           <td>${fmt(l.bolsa)}</td>
+          <td>${fmt(l.totalBolsa)}</td>
           <td>${fmt(l.vunit)}</td>
           <td>${fmt(l.totalCompra)}</td>
           <td>${fmt(l.utilTotal)}</td>
-          <td>${pct(l.pctUtil)}</td>
-        </tr>`).join('')}${orden.length > LIMITE ? `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${orden.length - LIMITE} más</td></tr>` : ''}</tbody>
+          <td>${pctConAviso(l)}</td>
+        </tr>`).join('')}${orden.length > LIMITE ? `<tr><td colspan="12"style="text-align:center;color:var(--ink-soft);font-size:12px;">… y ${orden.length - LIMITE} más</td></tr>` : ''}</tbody>
       </table></div>`);
 }
 
@@ -1745,12 +1783,13 @@ function renderDetailTable(nombre) {
         : l.viaAgosto
         ? ` <span title="Cruzado con el tablero de agosto por OC y descripción — clic para cambiar el ítem" style="cursor:pointer;color:var(--blue);font-weight:700;" onclick="openPairModal('${hq}')">A</span>`
         : '';
-      return `<tr>
+      const atipica = esAtipica(l);
+      return `<tr class="${atipica ? 'atipica' : ''}">
       <td class="tl">${fmtFecha(l.fecha)}${marca}</td>
       <td class="tl">${l.bodega || '—'}</td>
       <td class="tl">${l.oc || '—'}</td>
       <td class="tl">${l.codigo || '—'}</td>
-      <td class="tl desc">${l.descripcion || '—'}</td>
+      <td class="tl desc">${l.descripcion || '—'}${atipica ? `<div class="causa">⚠ ${causaAtipica(l)}</div>` : ''}</td>
       <td class="tl" title="${(l.pedido || '').replace(/"/g, '&quot;')}">${l.proyecto || (l.viaManual ? 'Sin Monday' : '—')}</td>
       <td class="tl terc hide-sm">${l.tercero || '—'}</td>
       <td>${l.cantMonday}</td>
@@ -1760,7 +1799,7 @@ function renderDetailTable(nombre) {
       <td>${fmt(l.vunit)}</td>
       <td>${fmt(l.totalCompra)}</td>
       <td>${fmt(l.utilTotal)}</td>
-      <td>${pct(l.pctUtil)}</td>
+      <td>${pctConAviso(l)}</td>
       <td>${commissionBadge(l.pctComis)}</td>
       <td class="comis-val">${l.valorComision > 0 ? fmt(l.valorComision) : '—'}</td>
     </tr>`;
